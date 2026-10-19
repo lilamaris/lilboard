@@ -10,5 +10,6 @@ version = "0.0.1-SNAPSHOT"
 dependencies {
     implementation(project(":board-service:domain"))
     implementation(project(":board-service:application"))
+    implementation(project(":board-service:jpa"))
     implementation(libs.spring.boot.starter.webmvc)
 }

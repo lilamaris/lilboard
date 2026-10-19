@@ -16,3 +16,7 @@ dependencyResolutionManagement {
 rootProject.name = "lilboard"
 
 include("kernel")
+
+include("board-service:domain")
+
+include("board-service:application")

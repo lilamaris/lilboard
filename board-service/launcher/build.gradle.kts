@@ -1,5 +1,7 @@
 plugins {
     id("spring.base")
+    id("spring.postgresql")
+    id("spring.test.h2")
     alias(libs.plugins.spring.boot)
 }
 

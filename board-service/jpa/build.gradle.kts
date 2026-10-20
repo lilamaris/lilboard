@@ -1,6 +1,5 @@
 plugins {
     id("spring.base")
-    id("spring.postgresql")
     id("spring.test.h2")
 }
 

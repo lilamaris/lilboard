@@ -8,6 +8,7 @@ MSA(Microservices Architecture) 기반 게시판 서비스를 목표로 하는 J
 - [개발 환경](#개발-환경)
 - [빌드 및 검증](#빌드-및-검증)
 - [실행 프로파일](#실행-프로파일)
+- [게시판 API](#게시판-api)
 - [에이전트 작업 규칙](#에이전트-작업-규칙)
 - [DevOps 진행 상태](#devops-진행-상태)
 
@@ -18,6 +19,7 @@ board-service/
   domain/       # 게시판 도메인
   application/  # 애플리케이션 계층
   jpa/          # DB 영속성 어댑터
+  web/          # HTTP API 어댑터
   launcher/     # 실행 및 환경 설정
 kernel/         # 공통 코드
 build-logic/    # 공통 빌드·포맷 설정
@@ -69,6 +71,20 @@ SPRING_PROFILES_ACTIVE=prod ./gradlew :board-service:launcher:bootRun
 
 H2는 테스트 전용 의존성이며 운영 JAR에 포함되지 않습니다. 프로파일을 지정하지 않은 실행에는 별도 DB 설정이 필요합니다.
 현재 DB 통합 테스트는 H2 기반이며, 실제 PostgreSQL에서 Flyway 적용·JPA 스키마 검증·저장 및 조회를 확인하는 Testcontainers 테스트는 P0 작업으로 남아 있습니다.
+
+## 게시판 API
+
+애플리케이션 기동 후 `POST /api/boards`로 게시판을 생성합니다.
+
+```bash
+curl -i -X POST http://localhost:8080/api/boards \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"자유게시판","description":"자유롭게 이야기를 나눠요"}'
+```
+
+성공 시 `201 Created`와 `id`, `name`, `description`, `createdAt`을 반환합니다.
+이름과 설명은 필수이며 공백만 입력할 수 없습니다. 이름은 최대 50자, 설명은 최대 300자이고, 잘못된 입력은 `400 Bad Request`를 반환합니다.
+launcher HTTP 통합 테스트는 H2에서 API → 유스케이스 → JPA 저장 경로를 검증합니다.
 
 ## 에이전트 작업 규칙
 

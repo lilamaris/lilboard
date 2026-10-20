@@ -6,7 +6,6 @@ import com.lilamaris.lilboard.board.application.port.in.result.CreateBoardResult
 import com.lilamaris.lilboard.board.application.port.out.BoardSavePort;
 import com.lilamaris.lilboard.board.application.port.out.UuidGenerator;
 import com.lilamaris.lilboard.board.domain.Board;
-import jakarta.validation.Valid;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
@@ -24,7 +23,7 @@ public class CreateBoardService implements CreateBoardUseCase {
     private final Clock clock;
 
     @Override
-    public CreateBoardResult create(@Valid CreateBoardCommand command) {
+    public CreateBoardResult create(CreateBoardCommand command) {
         UUID id = uuidGenerator.generate();
         Instant createdAt = clock.instant();
 

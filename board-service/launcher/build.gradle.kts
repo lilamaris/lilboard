@@ -13,7 +13,8 @@ dependencies {
     implementation(project(":board-service:domain"))
     implementation(project(":board-service:application"))
     implementation(project(":board-service:jpa"))
-    implementation(libs.spring.boot.starter.webmvc)
+    implementation(libs.spring.boot.starter.data.jpa)
+    implementation(project(":board-service:web"))
 
     testImplementation(libs.archunit.junit5)
 }

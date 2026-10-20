@@ -49,7 +49,7 @@ P0를 우선 진행하되, 독립적인 P1 로컬 컨테이너 구성은 병행�
 | ☐ | launcher 역할 제한 ArchUnit 검증 | 운영 코드를 진입점·승인된 설정 클래스로 제한하고 허용하지 않은 클래스 추가 시 실패하는지 확인 |
 | ☑ | Testcontainers PostgreSQL 기반 Flyway 통합 테스트 | prod 설정으로 빈 DB 마이그레이션·JPA `validate`, 저장·조회, 같은 DB로 앱 재기동 후 마이그레이션·데이터 유지 검증. 아래 실행 기록 참조 — `f9871f1` |
 | ☑ | 통합 테스트 CI 실행 경로 구성 | 기본 `test`에 포함되어 기존 필수 `Build and test`의 `./gradlew build`에서 실행. Docker 사전 확인 추가, Docker 미사용 시 skip 없이 실패 |
-| ☐ | PostgreSQL 통합 테스트 원격 CI 결과 확인 | 변경 반영 후 `Build and test`에서 테스트 3개 실행·성공을 보고서로 확인(현재 로컬 검증만 완료) |
+| ☑ | PostgreSQL 통합 테스트 원격 CI 결과 확인 | run `39493409122` artifact `test-reports`: `PostgresFlywayIntegrationTest` 포함, testsuite 12개·tests 200 성공. Docker 사전 확인 step 실행 확인(2026-10-21) |
 
 ## P1: 이미지와 실행 환경 준비
 
@@ -154,6 +154,9 @@ CodeQL languages는 GET 응답에서 `[]`로 표시된 기록이 있으나, run 
 - CODEOWNERS 파일과 승인 강제 설정은 별개다. branch protection 또는 rulesets에서 코드 소유자 승인 조건을 적용하고 실제 병합 차단을 확인한다.
 - ruleset 차단 검증(PR #3, 2026-10-21): required check failure이 차단 근거다. `Check formatting` 실패로 `Build and test`는 `needs: lint` 때문에 `skipped`로 기록됐고 CodeQL check은 success → `code_scanning` 규칙은 alert 없음(high_or_higher 기준)으로 충족. skipped required check만으로도 merge가 통과하는지는 별도로 확인해야 한다(GitHub는 skipped를 통과로 취급할 수 있음).
 - push protection은 합성 값으로 검증되지 않는다(2026-10-21, 4회 시도·alert 0). GitHub PAT는 GitHub이 실 존재를 검증하고, 합성 값은 차단되지 않는다. 개인 저장소에는 org test mode가 없어 확인 조건은 실 토큰 push 후 revoke뿐이다.
+- ruleset 게이트 실행 관찰(2026-10-21): required check 통과 후에도 CodeQL check이 `neutral`(실행 중)인 동안 `mergeable_state`는 blocked였고, CodeQL success 후 clean으로 전환됐다. 즉 code_scanning 규칙은 check 결과를 실제로 요구한다.
+- PR 이력: `#1` gradle-minor-patch group → `1c2daa1`, `#2` junit-bom 5.13.4→6.1.3 → `99434fa`, `#4` 로컬 commit 원격 반영 → `56f667d`. `#2`는 PR #1과 `libs.versions.toml` 인접 라인 conflict로 `gh pr update-branch`가 거부됐고 Dependabot이 branch를 재배치한 뒤 병합 가능했다.
+- 로컬 commit 3개(`f9871f1`·`a1be13c`·`6aa2078`)는 원격 main에 없었고 ruleset이 main direct push를 차단하므로 PR 경로로 반영했다(PR #4). main 반영은 PR 통해서만 가능하다는 운영 전제 확정.
 
 ## 커버리지 게이트 동작 검증 기록
 

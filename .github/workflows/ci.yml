@@ -35,6 +35,24 @@ jobs:
       - name: Run spotlessCheck
         run: ./gradlew spotlessCheck --no-daemon --console=plain --stacktrace
 
+  commit-message:
+    name: Validate commit messages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit message format
+        run: |
+          python3 .github/scripts/validate-commit-messages.py \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}"
+
   build:
     name: Build and test
     runs-on: ubuntu-latest

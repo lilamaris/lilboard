@@ -26,19 +26,24 @@ build-logic/    # 공통 빌드·포맷 설정
 
 - JDK 21
 - Gradle Wrapper 사용 (`gradlew`, `gradlew.bat`)
+- `gradle.properties`에 캐시·configuration cache·parallel 실행 설정
 
 ## 빌드 및 검증
 
 프로젝트 루트에서 실행합니다.
 
 ```bash
-./gradlew build          # 포맷 검사·빌드·테스트
+./gradlew build          # 포맷 검사·빌드·테스트·커버리지 게이트
 ./gradlew spotlessApply  # 자동 포맷
 ./gradlew spotlessCheck  # 포맷 검사
 ./gradlew jacocoTestReport  # 테스트 실행 및 모듈별 커버리지 보고서 생성
 ```
 
-모든 브랜치 push와 PR에서 GitHub Actions로 빌드와 검증을 수행합니다.
+`check` 단계에서 모듈별 라인 커버리지 게이트(기본 80%)를 검사합니다.
+실행 진입점 모듈(`launcher`)은 게이트에서 제외하며 `coverage.minimum`·`coverage.excludes`로 조정합니다.
+아키텍처 경계(domain이 상위 계층·Spring에 의존하지 않음, application이 어댑터에 의존하지 않음, kernel이 board-service에 의존하지 않음)는 ArchUnit 테스트로 검증합니다.
+
+`main` 브랜치 push와 PR에서 GitHub Actions로 포맷 검사(lint job)와 빌드·테스트(build job)를 수행합니다.
 테스트 후 각 모듈의 `build/reports/jacoco/test/`에 HTML·XML 보고서를 생성하며,
 CI에서는 테스트·커버리지 보고서를 artifact로 7일간 보관합니다.
 

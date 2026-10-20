@@ -91,11 +91,12 @@ P0를 우선 진행하되, 독립적인 P1 로컬 컨테이너 구성은 병행�
 
 | 상태 | 항목 | 완료 기준·설정·검증 근거 |
 |:---:|---|---|
-| ☐ | `.github/PULL_REQUEST_TEMPLATE.md` | 변경 목적·검증 결과·운영 영향 기록 |
-| ☐ | `.github/ISSUE_TEMPLATE/` | 버그 재현 조건과 작업 완료 기준 기록 |
+| ☑ | `.github/PULL_REQUEST_TEMPLATE.md` | 변경 내용(목적·운영 영향)·검증·관련 이슈의 간결한 Markdown 템플릿 추가. GitHub 화면 적용은 기본 브랜치 반영 후 확인 |
+| ☑ | `.github/ISSUE_TEMPLATE/` | 버그 보고(문제·재현 방법)와 기능·개선 요청(목적·완료 기준) Markdown 템플릿 추가. GitHub 화면 적용은 기본 브랜치 반영 후 확인 |
 | ☐ | `CONTRIBUTING.md` | 개발·테스트·리뷰 절차 안내 |
-| ☐ | 테스트 결과 PR 코멘트 게시 | fork PR에서도 권한·신뢰 경계를 유지하며 결과 제공 |
-| ☐ | 커밋 메시지 형식 검증 | AGENTS.md의 `<아이콘> <type>: <한국어 요약>`과 squash merge 정책에 맞춰 검사 대상 결정 |
+| ☑ | 테스트 결과 PR 코멘트 게시 구성 | `test-results.yml`에서 CI 완료 후 JUnit XML을 집계해 요약 코멘트 갱신. 테스트 실행은 읽기 권한 CI에 유지하고, fork·Dependabot PR의 결과 게시만 별도 권한으로 실행. actionlint 및 게시 전 조건 분기 8개 검증 통과 |
+| ☐ | 테스트 결과 PR 코멘트 원격 동작 확인 | 기본 브랜치 반영 후 일반·fork PR에서 성공·실패 요약과 기존 코멘트 갱신 확인. 현재는 로컬 구문·분기 검증만 완료 |
+| ☑ | 커밋 메시지 형식 검증 | `.github/scripts/validate-commit-messages.py`와 CI job(`.github/workflows/ci.yml`의 `commit-message`) 추가. AGENTS.md `<아이콘> <type>: <한국어 요약>` 형식(6개 타입)을 PR의 각 커밋 메시지로 검증. 스쿼시 머지 시 스쿼시 커밋 메시지도 동일 형식을 따른다. 커밋 후 해시는 본 항목에 기록. |
 | ☐ | `Makefile` | 반복 명령 단축이 필요할 때 도입 |
 | ☐ | `.devcontainer` | 개발 환경 공유가 필요할 때 도입 |
 | ☐ | 서비스 카탈로그 | 서비스별 담당자·저장소·배포·대시보드·runbook 연결 |

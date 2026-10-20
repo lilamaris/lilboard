@@ -14,4 +14,6 @@ dependencies {
     implementation(project(":board-service:application"))
     implementation(project(":board-service:jpa"))
     implementation(libs.spring.boot.starter.webmvc)
+
+    testImplementation(libs.archunit.junit5)
 }

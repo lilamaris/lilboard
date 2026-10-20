@@ -32,9 +32,12 @@ build-logic/    # 공통 빌드·포맷 설정
 ./gradlew build          # 포맷 검사·빌드·테스트
 ./gradlew spotlessApply  # 자동 포맷
 ./gradlew spotlessCheck  # 포맷 검사
+./gradlew jacocoTestReport  # 테스트 실행 및 모듈별 커버리지 보고서 생성
 ```
 
 모든 브랜치 push와 PR에서 GitHub Actions로 빌드와 검증을 수행합니다.
+테스트 후 각 모듈의 `build/reports/jacoco/test/`에 HTML·XML 보고서를 생성하며,
+CI에서는 테스트·커버리지 보고서를 artifact로 7일간 보관합니다.
 
 Dependabot은 매주 월요일 오전 9시(한국 시간)에 Gradle·GitHub Actions 업데이트를 확인합니다.
 minor·patch 업데이트는 묶고, major 업데이트는 개별 PR로 생성합니다.

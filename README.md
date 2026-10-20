@@ -36,6 +36,9 @@ build-logic/    # 공통 빌드·포맷 설정
 
 모든 브랜치 push와 PR에서 GitHub Actions로 빌드와 검증을 수행합니다.
 
+Dependabot은 매주 월요일 오전 9시(한국 시간)에 Gradle·GitHub Actions 업데이트를 확인합니다.
+minor·patch 업데이트는 묶고, major 업데이트는 개별 PR로 생성합니다.
+
 ## 에이전트 작업 규칙
 
 [AGENTS.md](AGENTS.md)는 AI 에이전트가 이 저장소에서 작업할 때 따르는 지침입니다.

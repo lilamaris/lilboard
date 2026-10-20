@@ -33,3 +33,4 @@
 - type별 아이콘은 `✨ feat`, `🐛 fix`, `♻️ refactor`, `✅ test`, `📝 docs`, `🔧 chore`를 사용한다.
 - 예: `✨ feat: 게시판 생성 기능 추가`
 - 하나의 커밋에는 하나의 논리적 변경을 담는다.
+- 스쿼시 머지 시 스쿼시된 커밋 메시지도 위 형식을 따른다. CI는 PR의 각 커밋 메시지를 검증하며(`.github/workflows/ci.yml`의 `commit-message` job), 스쿼시 머지를 채택하면 스쿼시 커밋 메시지(또는 PR 제목)가 이 형식을 따라야 한다.

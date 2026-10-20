@@ -45,7 +45,7 @@ docs/           # DevOps 체크리스트 등 프로젝트 문서
 
 `check` 단계에서 모듈별 라인 커버리지 게이트(기본 80%)를 검사합니다.
 현재 실행 진입점 모듈(`launcher`)은 `coverage.excludes=*launcher*`로 번들 단위 검사에서 제외합니다.
-기준은 `coverage.minimum`·`coverage.excludes`로 조정하며, launcher 예외 정책 확정과 게이트 실패·제외 동작 검증은 체크리스트의 P0 항목으로 남아 있습니다.
+기준은 `coverage.minimum`·`coverage.excludes`로 조정합니다. [launcher 제외 정책](docs/adr/0001-launcher-coverage-policy.md)을 확정하고 게이트 실패·제외 동작을 검증했으며, launcher 역할 제한을 위한 ArchUnit 검증은 P0 작업으로 남아 있습니다.
 아키텍처 경계(domain이 상위 계층·Spring에 의존하지 않음, application이 어댑터에 의존하지 않음, kernel이 board-service에 의존하지 않음)는 ArchUnit 테스트로 검증합니다.
 
 `main` 브랜치 push와 PR, 수동 실행에서 GitHub Actions로 포맷 검사(lint job)를 수행하고, 통과 후 빌드·테스트(build job)를 수행합니다.
@@ -70,7 +70,8 @@ SPRING_PROFILES_ACTIVE=prod ./gradlew :board-service:launcher:bootRun
 ```
 
 H2는 테스트 전용 의존성이며 운영 JAR에 포함되지 않습니다. 프로파일을 지정하지 않은 실행에는 별도 DB 설정이 필요합니다.
-현재 DB 통합 테스트는 H2 기반이며, 실제 PostgreSQL에서 Flyway 적용·JPA 스키마 검증·저장 및 조회를 확인하는 Testcontainers 테스트는 P0 작업으로 남아 있습니다.
+DB 통합 테스트는 H2 기반 검증과 Testcontainers PostgreSQL 기반 검증을 함께 수행합니다. PostgreSQL 테스트는 `prod` 설정으로 Flyway 적용·JPA 스키마 검증·저장 및 조회·앱 재기동 후 데이터 유지를 확인합니다.
+`./gradlew test`와 `build` 실행에는 Docker가 필요하며, PostgreSQL 이미지가 없으면 최초 실행 시 내려받습니다. CI도 기본 테스트 경로에서 실행하며, 원격 실행 결과 확인은 체크리스트에서 별도로 추적합니다.
 
 ## 게시판 API
 

@@ -24,3 +24,5 @@ include("board-service:application")
 include("board-service:launcher")
 
 include("board-service:jpa")
+
+include("board-service:web")

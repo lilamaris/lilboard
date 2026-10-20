@@ -1,4 +1,4 @@
-package com.lilamaris.lilboard.board.launcher;
+package com.lilamaris.lilboard.board;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

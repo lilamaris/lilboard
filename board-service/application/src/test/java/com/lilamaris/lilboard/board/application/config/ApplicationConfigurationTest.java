@@ -14,9 +14,9 @@ class ApplicationConfigurationTest {
     }
 
     @Test
-    @DisplayName("UUID 생성기는 버전 4 UUID를 생성한다")
-    void generatesVersionFourUuid() {
+    @DisplayName("UUID 생성기는 버전 7 UUID를 생성한다")
+    void generatesVersionSevenUuid() {
         assertThat(new ApplicationConfiguration().uuidGenerator().generate().version())
-                .isEqualTo(4);
+                .isEqualTo(7);
     }
 }

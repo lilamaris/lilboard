@@ -42,6 +42,7 @@ class BoardApiIntegrationTest {
                                 assertThat(board.getName()).isEqualTo("게시판");
                                 assertThat(board.getDescription()).isEqualTo("설명");
                                 assertThat(board.getCreatedAt()).isNotNull();
+                                assertThat(board.getId().version()).isEqualTo(7);
                                 assertThat(response.body()).contains(board.getId().toString());
                             });
         } finally {

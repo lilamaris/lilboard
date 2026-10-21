@@ -9,7 +9,6 @@ import com.tngtech.archunit.junit.ArchTest;
 
 @AnalyzeClasses(packages = "com.lilamaris.lilboard")
 class ArchitectureTest {
-
     @ArchTest
     void domainDoesNotDependOnOuterLayersOrSpring(JavaClasses classes) {
         noClasses()

@@ -5,7 +5,6 @@ import java.util.List;
 
 /** 값과 기준값(reference)의 관계로 판단되는 조건 위반. 하나 이상의 null이 아닌 기준값을 순서대로 담는다. */
 public final class IllegalComparisonConditionException extends IllegalConditionException {
-
     private final List<?> references;
 
     public IllegalComparisonConditionException(

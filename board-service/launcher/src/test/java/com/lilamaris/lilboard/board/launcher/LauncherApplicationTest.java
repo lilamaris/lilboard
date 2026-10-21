@@ -16,7 +16,6 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test")
 class LauncherApplicationTest {
-
     @Autowired private DataSource dataSource;
 
     @Autowired private ApplicationContext applicationContext;

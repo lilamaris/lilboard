@@ -6,7 +6,6 @@ import java.util.Objects;
 
 /** 자연 순서에 따른 범위 검사의 공통 구현. 양 끝 경계를 포함한다. */
 final class ComparablePrecondition {
-
     private ComparablePrecondition() {}
 
     static <T extends Comparable<? super T>> T requireAtLeast(T value, T minimum) {

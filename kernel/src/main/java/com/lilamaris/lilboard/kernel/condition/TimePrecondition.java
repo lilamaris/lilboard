@@ -7,7 +7,6 @@ import java.util.Objects;
 
 /** 시간 값의 자연 순서와 Duration의 부호를 검사한다. */
 public final class TimePrecondition {
-
     private TimePrecondition() {}
 
     public static <T extends Comparable<? super T>> T requireBefore(T subject, T upperBound) {

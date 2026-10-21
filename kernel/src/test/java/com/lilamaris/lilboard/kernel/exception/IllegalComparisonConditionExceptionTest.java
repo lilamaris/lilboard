@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("비교 조건 위반 예외")
 class IllegalComparisonConditionExceptionTest {
-
     @Test
     @DisplayName("기준값이 없으면 예외 생성을 거부한다")
     void rejectsMissingReferences() {

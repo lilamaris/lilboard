@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ApplicationConfiguration {
-
     @Bean
     public UuidGenerator uuidGenerator() {
         return UuidCreator::getTimeOrderedEpoch;

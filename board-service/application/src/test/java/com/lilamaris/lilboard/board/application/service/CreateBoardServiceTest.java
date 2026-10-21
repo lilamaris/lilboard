@@ -24,7 +24,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CreateBoardServiceTest {
-
     private static final UUID BOARD_ID = UUID.fromString("c9bf9a5c-7a33-4b0e-9c8a-1f2e3d4c5b6a");
     private static final Instant CREATED_AT = Instant.parse("2024-01-15T10:30:00Z");
     private static final Clock FIXED_CLOCK = Clock.fixed(CREATED_AT, ZoneId.of("UTC"));

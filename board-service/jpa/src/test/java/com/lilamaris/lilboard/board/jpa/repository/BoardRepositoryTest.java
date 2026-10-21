@@ -46,6 +46,25 @@ class BoardRepositoryTest {
                         actual -> assertThat(actual).usingRecursiveComparison().isEqualTo(board));
     }
 
+    @Test
+    @DisplayName("H2의 동일 테이블에서 UUIDv4와 UUIDv7 게시판을 각각 저장하고 조회한다")
+    void savesAndLoadsVersionFourAndSevenUuidsTogether() {
+        UUID legacyId = UUID.fromString("c9bf9a5c-7a33-4b0e-9c8a-1f2e3d4c5b6a");
+        UUID newId = UUID.fromString("019a0c00-0000-7000-8000-000000000001");
+        Board legacy = Board.of(legacyId, "기존 게시판", "설명", Instant.parse("2026-01-01T00:00:00Z"));
+        Board current = Board.of(newId, "신규 게시판", "설명", Instant.parse("2026-01-02T00:00:00Z"));
+        repository.saveAndFlush(legacy);
+        repository.saveAndFlush(current);
+        entityManager.clear();
+
+        assertThat(repository.findById(legacyId))
+                .hasValueSatisfying(
+                        actual -> assertThat(actual).usingRecursiveComparison().isEqualTo(legacy));
+        assertThat(repository.findById(newId))
+                .hasValueSatisfying(
+                        actual -> assertThat(actual).usingRecursiveComparison().isEqualTo(current));
+    }
+
     @SpringBootConfiguration
     @EnableAutoConfiguration
     @EntityScan(basePackageClasses = Board.class)

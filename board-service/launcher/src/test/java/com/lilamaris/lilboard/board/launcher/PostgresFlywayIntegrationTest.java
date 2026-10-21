@@ -3,6 +3,8 @@ package com.lilamaris.lilboard.board.launcher;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.lilamaris.lilboard.board.LauncherApplication;
+import com.lilamaris.lilboard.board.application.port.in.CreateBoardUseCase;
+import com.lilamaris.lilboard.board.application.port.in.command.CreateBoardCommand;
 import com.lilamaris.lilboard.board.domain.Board;
 import com.lilamaris.lilboard.board.jpa.repository.BoardRepository;
 import java.time.Instant;
@@ -81,6 +83,40 @@ class PostgresFlywayIntegrationTest {
                                         assertThat(persisted)
                                                 .usingRecursiveComparison()
                                                 .isEqualTo(board));
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("PostgreSQL의 기존 UUIDv4 게시판과 유스케이스가 생성한 UUIDv7 게시판을 재기동 후에도 조회한다")
+    void preservesLegacyAndGeneratedVersionSevenBoardsAfterRestart() {
+        try (PostgreSQLContainer postgres = startPostgres()) {
+            UUID legacyId = UUID.fromString("c9bf9a5c-7a33-4b0e-9c8a-1f2e3d4c5b6a");
+            Board legacy = Board.of(legacyId, "기존 게시판", "설명", CREATED_AT);
+            UUID newId;
+            try (ConfigurableApplicationContext first = startApplication(postgres)) {
+                first.getBean(BoardRepository.class).saveAndFlush(legacy);
+                var result =
+                        first.getBean(CreateBoardUseCase.class)
+                                .create(new CreateBoardCommand("신규 게시판", "설명"));
+                newId = result.id();
+                assertThat(newId.version()).isEqualTo(7);
+            }
+            try (ConfigurableApplicationContext restarted = startApplication(postgres)) {
+                BoardRepository repository = restarted.getBean(BoardRepository.class);
+                assertThat(repository.findById(legacyId))
+                        .hasValueSatisfying(
+                                actual ->
+                                        assertThat(actual)
+                                                .usingRecursiveComparison()
+                                                .isEqualTo(legacy));
+                assertThat(repository.findById(newId))
+                        .hasValueSatisfying(
+                                actual -> {
+                                    assertThat(actual.getId()).isEqualTo(newId);
+                                    assertThat(actual.getName()).isEqualTo("신규 게시판");
+                                    assertThat(actual.getDescription()).isEqualTo("설명");
+                                });
             }
         }
     }

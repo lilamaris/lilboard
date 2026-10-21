@@ -1,8 +1,8 @@
 package com.lilamaris.lilboard.board.application.config;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import com.lilamaris.lilboard.board.application.port.out.UuidGenerator;
 import java.time.Clock;
-import java.util.UUID;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,7 +11,7 @@ public class ApplicationConfiguration {
 
     @Bean
     public UuidGenerator uuidGenerator() {
-        return UUID::randomUUID;
+        return UuidCreator::getTimeOrderedEpoch;
     }
 
     @Bean

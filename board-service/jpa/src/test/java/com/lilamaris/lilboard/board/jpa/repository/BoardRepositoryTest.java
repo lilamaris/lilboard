@@ -23,7 +23,6 @@ import org.springframework.test.context.ContextConfiguration;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = BoardRepositoryTest.TestApplication.class)
 class BoardRepositoryTest {
-
     @Autowired private BoardRepository repository;
 
     @Autowired private EntityManager entityManager;

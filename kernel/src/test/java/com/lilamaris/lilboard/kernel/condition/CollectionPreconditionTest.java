@@ -18,7 +18,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("Collection Precondition 테스트")
 class CollectionPreconditionTest {
-
     @Test
     @DisplayName("값만으로 null 요소 조건을 검사하면 조건을 만족한 컬렉션을 반환한다")
     void returnsCollectionWhenNullElementConditionMatches() {

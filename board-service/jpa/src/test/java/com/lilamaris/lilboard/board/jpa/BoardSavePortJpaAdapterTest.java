@@ -30,7 +30,6 @@ import org.springframework.test.context.ContextConfiguration;
 @Import(BoardSavePortJpaAdapter.class)
 @DisplayName("BoardSavePortJpaAdapter 테스트")
 class BoardSavePortJpaAdapterTest {
-
     private static final UUID ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final Instant CREATED_AT = Instant.parse("2026-01-01T00:00:00Z");
 

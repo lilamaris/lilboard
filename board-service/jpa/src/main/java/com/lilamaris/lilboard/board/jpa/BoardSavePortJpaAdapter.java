@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class BoardSavePortJpaAdapter implements BoardSavePort {
-
     private final BoardRepository repository;
 
     @Override

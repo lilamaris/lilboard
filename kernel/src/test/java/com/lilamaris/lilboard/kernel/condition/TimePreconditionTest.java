@@ -19,7 +19,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("시간 조건 검사")
 class TimePreconditionTest {
-
     private static final Instant REFERENCE = Instant.parse("2026-01-02T00:00:00Z");
     private static final LocalDate REFERENCE_DATE = LocalDate.of(2026, 1, 2);
 

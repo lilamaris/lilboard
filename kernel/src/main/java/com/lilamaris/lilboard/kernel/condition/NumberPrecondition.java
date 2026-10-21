@@ -4,7 +4,6 @@ import com.lilamaris.lilboard.kernel.exception.IllegalValueConditionException;
 import java.util.Objects;
 
 public final class NumberPrecondition {
-
     private NumberPrecondition() {}
 
     public static Integer requireNegative(Integer value) {

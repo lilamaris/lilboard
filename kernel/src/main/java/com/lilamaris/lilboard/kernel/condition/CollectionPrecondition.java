@@ -8,7 +8,6 @@ import java.util.Objects;
 
 /** 컬렉션 조건 검사. 크기 기준값은 0 이상이며 범위의 양 끝 경계를 포함한다. */
 public final class CollectionPrecondition {
-
     private CollectionPrecondition() {}
 
     public static <E, C extends Collection<E>> C requireNonNullElements(C value) {

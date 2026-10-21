@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("String Precondition 테스트")
 class StringPreconditionTest {
-
     @Test
     @DisplayName("값만으로 빈 문자열 조건을 검사하면 조건을 만족한 값을 반환한다")
     void returnsValueWhenNonBlankConditionMatches() {

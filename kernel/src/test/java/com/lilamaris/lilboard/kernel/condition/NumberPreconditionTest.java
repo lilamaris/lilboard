@@ -16,7 +16,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("Number Precondition 테스트")
 class NumberPreconditionTest {
-
     @Test
     @DisplayName("값만으로 음수 조건을 검사하면 조건을 만족한 Integer를 반환한다")
     void returnsIntegerWhenNegativeConditionMatches() {

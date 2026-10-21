@@ -5,7 +5,6 @@ import com.lilamaris.lilboard.kernel.exception.IllegalValueConditionException;
 import java.util.Objects;
 
 public final class StringPrecondition {
-
     private StringPrecondition() {}
 
     public static String requireNonBlank(String value) {

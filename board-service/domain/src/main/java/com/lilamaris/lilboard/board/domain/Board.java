@@ -1,6 +1,5 @@
 package com.lilamaris.lilboard.board.domain;
 
-import com.lilamaris.lilboard.kernel.condition.NumberPrecondition;
 import com.lilamaris.lilboard.kernel.condition.StringPrecondition;
 import com.lilamaris.lilboard.kernel.condition.TimePrecondition;
 import jakarta.persistence.Column;
@@ -19,7 +18,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Board {
-
     private static final int MAX_NAME_LENGTH = 50;
     private static final int MAX_DESCRIPTION_LENGTH = 300;
 
@@ -39,8 +37,8 @@ public class Board {
 
     private Board(UUID id, String name, String description, Instant createdAt, Instant updatedAt) {
         this.id = Objects.requireNonNull(id, "id must not be null.");
-        this.name = requireMaxLen(name, MAX_NAME_LENGTH);
-        this.description = requireMaxLen(description, MAX_DESCRIPTION_LENGTH);
+        this.name = StringPrecondition.requireMaxLen(name, MAX_NAME_LENGTH);
+        this.description = StringPrecondition.requireMaxLen(description, MAX_DESCRIPTION_LENGTH);
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null.");
 
         if (updatedAt != null) TimePrecondition.requireAfterOrEqual(updatedAt, createdAt);
@@ -50,9 +48,20 @@ public class Board {
         return new Board(id, name, description, createdAt, null);
     }
 
-    private static String requireMaxLen(String value, int maxLen) {
-        StringPrecondition.requireNonBlank(value);
-        NumberPrecondition.requireAtMost(value.length(), maxLen);
-        return value;
+    public void updateName(String name, Instant updatedAt) {
+        String validatedName = StringPrecondition.requireMaxLen(name, MAX_NAME_LENGTH);
+        update(updatedAt);
+        this.name = validatedName;
+    }
+
+    public void updateDescription(String description, Instant updatedAt) {
+        String validatedDescription =
+                StringPrecondition.requireMaxLen(description, MAX_DESCRIPTION_LENGTH);
+        update(updatedAt);
+        this.description = validatedDescription;
+    }
+
+    private void update(Instant updatedAt) {
+        this.updatedAt = TimePrecondition.requireAfterOrEqual(updatedAt, createdAt);
     }
 }

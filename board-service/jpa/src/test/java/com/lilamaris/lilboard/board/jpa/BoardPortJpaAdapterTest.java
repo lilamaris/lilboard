@@ -3,6 +3,7 @@ package com.lilamaris.lilboard.board.jpa;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.lilamaris.lilboard.board.application.port.out.BoardFindPort;
 import com.lilamaris.lilboard.board.application.port.out.BoardSavePort;
 import com.lilamaris.lilboard.board.domain.Board;
 import com.lilamaris.lilboard.board.jpa.repository.BoardRepository;
@@ -26,14 +27,16 @@ import org.springframework.test.context.ContextConfiguration;
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ContextConfiguration(classes = BoardSavePortJpaAdapterTest.TestApplication.class)
-@Import(BoardSavePortJpaAdapter.class)
-@DisplayName("BoardSavePortJpaAdapter 테스트")
-class BoardSavePortJpaAdapterTest {
+@ContextConfiguration(classes = BoardPortJpaAdapterTest.TestApplication.class)
+@Import(BoardPortJpaAdapter.class)
+@DisplayName("BoardPortJpaAdapter 테스트")
+class BoardPortJpaAdapterTest {
     private static final UUID ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final Instant CREATED_AT = Instant.parse("2026-01-01T00:00:00Z");
 
     @Autowired private BoardSavePort savePort;
+
+    @Autowired private BoardFindPort findPort;
 
     @Autowired private BoardRepository repository;
 
@@ -86,6 +89,25 @@ class BoardSavePortJpaAdapterTest {
     void throwsInvalidDataAccessApiUsageExceptionWhenBoardToSaveIsNull() {
         assertThatThrownBy(() -> savePort.save(null))
                 .isInstanceOf(InvalidDataAccessApiUsageException.class);
+    }
+
+    @Test
+    @DisplayName("저장한 게시물을 findById로 조회하면 같은 값으로 반환한다")
+    void findsSavedBoardById() {
+        Board board = Board.of(ID, "자유게시판", "자유롭게 이야기를 나눠요", CREATED_AT);
+        savePort.save(board);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(findPort.findById(ID))
+                .hasValueSatisfying(
+                        found -> assertThat(found).usingRecursiveComparison().isEqualTo(board));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 id로 조회하면 Optional.empty를 반환한다")
+    void returnsEmptyWhenBoardNotFoundById() {
+        assertThat(findPort.findById(UUID.randomUUID())).isEmpty();
     }
 
     @SpringBootConfiguration

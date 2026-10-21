@@ -12,10 +12,12 @@ import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("Board 테스트")
 class BoardTest {
-
     private static final UUID ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final Instant CREATED_AT = Instant.parse("2026-01-01T00:00:00Z");
 
@@ -83,7 +85,7 @@ class BoardTest {
     }
 
     @Test
-    @DisplayName("Board를 생성하면 name이 빈 문자열일 때 예외를 던진다")
+    @DisplayName("Board를 생성하면 name이 공백 문자열일 때 예외를 던진다")
     void throwsWhenNameIsBlank() {
         String name = " ";
 
@@ -98,7 +100,7 @@ class BoardTest {
     }
 
     @Test
-    @DisplayName("Board를 생성하면 description이 빈 문자열일 때 예외를 던진다")
+    @DisplayName("Board를 생성하면 description이 공백 문자열일 때 예외를 던진다")
     void throwsWhenDescriptionIsBlank() {
         String description = "   ";
 
@@ -148,5 +150,199 @@ class BoardTest {
 
         assertThatThrownBy(() -> Board.of(id, "게시판", "설명", CREATED_AT))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 50})
+    @DisplayName("name을 최소·최대 길이로 수정하면 해당 값과 수정 시각을 저장하고 나머지 필드를 유지한다")
+    void updatesNameAtLengthBoundaries(int length) {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        String originalOther = board.getDescription();
+        String value = "a".repeat(length);
+        Instant updatedAt = CREATED_AT.plusSeconds(1);
+
+        board.updateName(value, updatedAt);
+
+        assertThat(board.getName()).isEqualTo(value);
+        assertThat(board.getUpdatedAt()).isEqualTo(updatedAt);
+        assertThat(board.getDescription()).isEqualTo(originalOther);
+        assertThat(board.getId()).isEqualTo(ID);
+        assertThat(board.getCreatedAt()).isEqualTo(CREATED_AT);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "\t\n"})
+    @NullSource
+    @DisplayName("name을 null이나 빈 문자열·공백으로 수정하면 예외를 던지고 기존 상태를 유지한다")
+    void rejectsInvalidNameWithoutChangingState(String value) {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        board.updateName("기존 값", CREATED_AT.plusSeconds(1));
+
+        assertThatThrownBy(() -> board.updateName(value, CREATED_AT.plusSeconds(2)))
+                .isInstanceOf(
+                        value == null
+                                ? NullPointerException.class
+                                : IllegalValueConditionException.class);
+
+        assertThat(board.getName()).isEqualTo("기존 값");
+        assertThat(board.getUpdatedAt()).isEqualTo(CREATED_AT.plusSeconds(1));
+    }
+
+    @Test
+    @DisplayName("name을 최대 길이보다 길게 수정하면 예외를 던지고 기존 상태를 유지한다")
+    void rejectsNameExceedingMaxLengthWithoutChangingState() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        String original = board.getName();
+
+        IllegalComparisonConditionException exception =
+                catchThrowableOfType(
+                        IllegalComparisonConditionException.class,
+                        () -> board.updateName("a".repeat(51), CREATED_AT.plusSeconds(1)));
+
+        assertThat(exception.condition()).isEqualTo(ComparisonCondition.AT_MOST);
+        assertThat(exception.subject()).isEqualTo(51);
+        assertThat(exception.reference()).isEqualTo(50);
+        assertThat(board.getName()).isEqualTo(original);
+        assertThat(board.getUpdatedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("name의 수정 시각이 생성 시각과 같으면 수정을 허용한다")
+    void updatesNameAtCreationTime() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+
+        board.updateName("수정 값", CREATED_AT);
+
+        assertThat(board.getName()).isEqualTo("수정 값");
+        assertThat(board.getUpdatedAt()).isEqualTo(CREATED_AT);
+    }
+
+    @Test
+    @DisplayName("name의 수정 시각이 생성 시각보다 1나노초 빠르면 예외를 던지고 기존 상태를 유지한다")
+    void rejectsNameUpdateBeforeCreationWithoutChangingState() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        board.updateName("기존 값", CREATED_AT.plusSeconds(1));
+        Instant invalidTime = CREATED_AT.minusNanos(1);
+
+        IllegalComparisonConditionException exception =
+                catchThrowableOfType(
+                        IllegalComparisonConditionException.class,
+                        () -> board.updateName("수정 값", invalidTime));
+
+        assertThat(exception.condition()).isEqualTo(ComparisonCondition.AFTER_OR_EQUAL);
+        assertThat(exception.subject()).isEqualTo(invalidTime);
+        assertThat(exception.reference()).isEqualTo(CREATED_AT);
+        assertThat(board.getName()).isEqualTo("기존 값");
+        assertThat(board.getUpdatedAt()).isEqualTo(CREATED_AT.plusSeconds(1));
+    }
+
+    @Test
+    @DisplayName("name의 수정 시각이 null이면 예외를 던지고 기존 상태를 유지한다")
+    void rejectsNameUpdateWithNullTimeWithoutChangingState() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        String original = board.getName();
+
+        assertThatThrownBy(() -> board.updateName("수정 값", null))
+                .isInstanceOf(NullPointerException.class);
+
+        assertThat(board.getName()).isEqualTo(original);
+        assertThat(board.getUpdatedAt()).isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 300})
+    @DisplayName("description을 최소·최대 길이로 수정하면 해당 값과 수정 시각을 저장하고 나머지 필드를 유지한다")
+    void updatesDescriptionAtLengthBoundaries(int length) {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        String originalOther = board.getName();
+        String value = "a".repeat(length);
+        Instant updatedAt = CREATED_AT.plusSeconds(1);
+
+        board.updateDescription(value, updatedAt);
+
+        assertThat(board.getDescription()).isEqualTo(value);
+        assertThat(board.getUpdatedAt()).isEqualTo(updatedAt);
+        assertThat(board.getName()).isEqualTo(originalOther);
+        assertThat(board.getId()).isEqualTo(ID);
+        assertThat(board.getCreatedAt()).isEqualTo(CREATED_AT);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "\t\n"})
+    @NullSource
+    @DisplayName("description을 null이나 빈 문자열·공백으로 수정하면 예외를 던지고 기존 상태를 유지한다")
+    void rejectsInvalidDescriptionWithoutChangingState(String value) {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        board.updateDescription("기존 값", CREATED_AT.plusSeconds(1));
+
+        assertThatThrownBy(() -> board.updateDescription(value, CREATED_AT.plusSeconds(2)))
+                .isInstanceOf(
+                        value == null
+                                ? NullPointerException.class
+                                : IllegalValueConditionException.class);
+
+        assertThat(board.getDescription()).isEqualTo("기존 값");
+        assertThat(board.getUpdatedAt()).isEqualTo(CREATED_AT.plusSeconds(1));
+    }
+
+    @Test
+    @DisplayName("description을 최대 길이보다 길게 수정하면 예외를 던지고 기존 상태를 유지한다")
+    void rejectsDescriptionExceedingMaxLengthWithoutChangingState() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        String original = board.getDescription();
+
+        IllegalComparisonConditionException exception =
+                catchThrowableOfType(
+                        IllegalComparisonConditionException.class,
+                        () -> board.updateDescription("a".repeat(301), CREATED_AT.plusSeconds(1)));
+
+        assertThat(exception.condition()).isEqualTo(ComparisonCondition.AT_MOST);
+        assertThat(exception.subject()).isEqualTo(301);
+        assertThat(exception.reference()).isEqualTo(300);
+        assertThat(board.getDescription()).isEqualTo(original);
+        assertThat(board.getUpdatedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("description의 수정 시각이 생성 시각과 같으면 수정을 허용한다")
+    void updatesDescriptionAtCreationTime() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+
+        board.updateDescription("수정 값", CREATED_AT);
+
+        assertThat(board.getDescription()).isEqualTo("수정 값");
+        assertThat(board.getUpdatedAt()).isEqualTo(CREATED_AT);
+    }
+
+    @Test
+    @DisplayName("description의 수정 시각이 생성 시각보다 1나노초 빠르면 예외를 던지고 기존 상태를 유지한다")
+    void rejectsDescriptionUpdateBeforeCreationWithoutChangingState() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        board.updateDescription("기존 값", CREATED_AT.plusSeconds(1));
+        Instant invalidTime = CREATED_AT.minusNanos(1);
+
+        IllegalComparisonConditionException exception =
+                catchThrowableOfType(
+                        IllegalComparisonConditionException.class,
+                        () -> board.updateDescription("수정 값", invalidTime));
+
+        assertThat(exception.condition()).isEqualTo(ComparisonCondition.AFTER_OR_EQUAL);
+        assertThat(exception.subject()).isEqualTo(invalidTime);
+        assertThat(exception.reference()).isEqualTo(CREATED_AT);
+        assertThat(board.getDescription()).isEqualTo("기존 값");
+        assertThat(board.getUpdatedAt()).isEqualTo(CREATED_AT.plusSeconds(1));
+    }
+
+    @Test
+    @DisplayName("description의 수정 시각이 null이면 예외를 던지고 기존 상태를 유지한다")
+    void rejectsDescriptionUpdateWithNullTimeWithoutChangingState() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        String original = board.getDescription();
+
+        assertThatThrownBy(() -> board.updateDescription("수정 값", null))
+                .isInstanceOf(NullPointerException.class);
+
+        assertThat(board.getDescription()).isEqualTo(original);
+        assertThat(board.getUpdatedAt()).isNull();
     }
 }

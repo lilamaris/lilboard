@@ -91,4 +91,48 @@ class StringPreconditionTest {
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("text must not be null.");
     }
+
+    @Test
+    @DisplayName("최대 길이 조건을 검사하면 조건을 만족한 값을 반환한다")
+    void returnsValueWhenMaxLenConditionMatches() {
+        assertThat(StringPrecondition.requireMaxLen("value", 10)).isEqualTo("value");
+    }
+
+    @Test
+    @DisplayName("최대 길이 조건을 검사하면 값 길이가 최대 길이와 같으면 값을 그대로 반환한다")
+    void returnsValueWhenValueLengthEqualsMaxLen() {
+        assertThat(StringPrecondition.requireMaxLen("a".repeat(5), 5)).isEqualTo("a".repeat(5));
+    }
+
+    @Test
+    @DisplayName("최대 길이 조건을 검사하면 값 길이가 최대 길이를 넘으면 예외를 던진다")
+    void throwsWhenValueExceedsMaxLen() {
+        String value = "a".repeat(6);
+
+        IllegalComparisonConditionException exception =
+                catchThrowableOfType(
+                        IllegalComparisonConditionException.class,
+                        () -> StringPrecondition.requireMaxLen(value, 5));
+
+        assertThat(exception).hasMessage("must be at most 5.");
+        assertThat(exception.condition()).isEqualTo(ComparisonCondition.AT_MOST);
+        assertThat(exception.subject()).isEqualTo(6);
+        assertThat(exception.reference()).isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("최대 길이 조건을 검사하면 값이 빈 문자열일 때 예외를 던진다")
+    void throwsWhenValueIsBlankForMaxLenCondition() {
+        assertThatThrownBy(() -> StringPrecondition.requireMaxLen(" ", 5))
+                .isInstanceOf(IllegalValueConditionException.class)
+                .hasMessage("must not be blank.");
+    }
+
+    @Test
+    @DisplayName("최대 길이 조건을 검사하면 값이 null일 때 NullPointerException을 던진다")
+    void throwsNullPointerExceptionWhenValueIsNullForMaxLenCondition() {
+        assertThatThrownBy(() -> StringPrecondition.requireMaxLen(null, 5))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("value must not be null.");
+    }
 }

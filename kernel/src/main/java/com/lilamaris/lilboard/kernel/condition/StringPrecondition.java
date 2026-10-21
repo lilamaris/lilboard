@@ -24,4 +24,10 @@ public final class StringPrecondition {
         }
         return value;
     }
+
+    public static String requireMaxLen(String value, int maxLen) {
+        requireNonBlank(value);
+        NumberPrecondition.requireAtMost(value.length(), maxLen);
+        return value;
+    }
 }

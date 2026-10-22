@@ -3,6 +3,7 @@ package com.lilamaris.lilboard.kernel.pagination;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.lilamaris.lilboard.kernel.exception.IllegalComparisonConditionException;
 import com.lilamaris.lilboard.kernel.exception.IllegalValueConditionException;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
@@ -36,5 +37,19 @@ class CursorPageRequestTest {
     void rejectsNonPositiveSize(int size) {
         assertThatThrownBy(() -> CursorPageRequest.of(null, size))
                 .isInstanceOf(IllegalValueConditionException.class);
+    }
+
+    @Test
+    @DisplayName("크기가 정수 최댓값보다 하나 작으면 추가 조회 가능한 요청을 생성한다")
+    void acceptsMaximumLookaheadSize() {
+        assertThat(new CursorPageRequest<>(null, Integer.MAX_VALUE - 1).size())
+                .isEqualTo(Integer.MAX_VALUE - 1);
+    }
+
+    @Test
+    @DisplayName("크기에 추가 조회 한 개를 더할 수 없으면 요청을 거부한다")
+    void rejectsSizeWithoutLookaheadCapacity() {
+        assertThatThrownBy(() -> CursorPageRequest.of(null, Integer.MAX_VALUE))
+                .isInstanceOf(IllegalComparisonConditionException.class);
     }
 }

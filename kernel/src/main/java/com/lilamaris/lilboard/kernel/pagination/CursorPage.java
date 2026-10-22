@@ -19,6 +19,7 @@ public record CursorPage<T, I>(List<T> items, Cursor<I> nextCursor) {
     public static <T, I> CursorPage<T, I> from(
             List<T> fetched, int limit, Function<? super T, Cursor<I>> cursorExtractor) {
         NumberPrecondition.requirePositive(limit);
+        NumberPrecondition.requireAtMost(limit, Integer.MAX_VALUE - 1);
         Objects.requireNonNull(cursorExtractor, "cursorExtractor must not be null.");
         List<T> snapshot = List.copyOf(fetched);
         boolean hasNext = snapshot.size() > limit;

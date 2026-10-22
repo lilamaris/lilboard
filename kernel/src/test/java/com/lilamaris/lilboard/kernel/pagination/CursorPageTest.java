@@ -3,6 +3,7 @@ package com.lilamaris.lilboard.kernel.pagination;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.lilamaris.lilboard.kernel.exception.IllegalComparisonConditionException;
 import com.lilamaris.lilboard.kernel.exception.IllegalValueConditionException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -93,7 +94,7 @@ class CursorPageTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {2, 3, Integer.MAX_VALUE})
+    @ValueSource(ints = {2, 3, Integer.MAX_VALUE - 1})
     @DisplayName("조회 결과가 제한 개수 이하이면 커서를 추출하지 않고 마지막 페이지를 반환한다")
     void buildsLastPage(int limit) {
         var page =
@@ -158,5 +159,15 @@ class CursorPageTest {
     void rejectsNullExtractedCursor() {
         assertThatThrownBy(() -> CursorPage.from(List.of(2, 1), 1, item -> null))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("제한 개수에 추가 조회 한 개를 더할 수 없으면 페이지 조립을 거부한다")
+    void rejectsLimitWithoutLookaheadCapacity() {
+        assertThatThrownBy(
+                        () ->
+                                CursorPage.from(
+                                        List.of(1), Integer.MAX_VALUE, CursorPageTest::cursorFor))
+                .isInstanceOf(IllegalComparisonConditionException.class);
     }
 }

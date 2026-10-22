@@ -1,6 +1,6 @@
 # 컨테이너 이미지 구성과 빌드
 
-서비스 이미지의 빌드·실행에 공통으로 사용하는 구성을 설명한다. 동일한 Dockerfile과 `.dockerignore`를 로컬 빌드와 CI 이미지 빌드에 사용하며, 실행 시 환경별 DB 설정과 시크릿을 주입한다. 모든 명령은 저장소 루트 기준이다.
+서비스 이미지의 빌드·실행에 공통으로 사용하는 구성을 설명한다. Dockerfile과 `.dockerignore`는 로컬과 CI에서 공통으로 사용할 수 있으며, 현재 CI의 이미지 빌드는 아직 구성하지 않았다. 실행 시 환경별 DB 설정과 시크릿을 주입한다. 모든 명령은 저장소 루트 기준이다.
 
 | 파일 | 역할 |
 |---|---|
@@ -76,4 +76,4 @@ docker build -f board-service/launcher/Dockerfile -t lilboard-board:example .
 
 앱 기동 시 Flyway가 마이그레이션을 수행하고 JPA는 스키마를 `validate`한다. 접속 정보는 이미지를 만들 때 저장하지 않고 실행 환경에서 주입한다. 원격 환경의 시크릿 저장소·주입 방식과 앱·마이그레이션 계정 분리는 별도 결정한다.
 
-구체적인 Docker 실행 명령은 [로컬 실행 예시](local-runtime.md)를 참조한다. 레지스트리 게시, 배포 플랫폼별 런타임 정의·인증·네트워크 설정은 아직 구성하지 않았다. 현재 검증 범위는 [DevOps 체크리스트](../devops-checklist.md#로컬-이미지-검증-기록)에 기록한다.
+실행 방법은 [Docker Compose](compose.md) 또는 [Docker CLI 예시](local-runtime.md)를 참조한다. 레지스트리 게시, 배포 플랫폼별 런타임 정의·인증·네트워크 설정은 아직 구성하지 않았다. 이미지 빌드·기동과 Compose API·데이터 유지의 검증 범위는 [DevOps 체크리스트](../devops-checklist.md)에 각각 기록한다.

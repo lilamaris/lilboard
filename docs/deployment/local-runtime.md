@@ -2,7 +2,7 @@
 
 [공통 컨테이너 이미지](container-image.md)를 PostgreSQL과 함께 실행하는 예시다. 모든 명령은 저장소 루트에서 실행하며 Docker Engine과 호스트의 빈 8080 포트가 필요하다. Dockerfile과 `.dockerignore`의 구성 설명은 공통 이미지 문서에서 관리한다.
 
-현재 Compose·환경 변수 예시 파일·실행 스크립트는 구성 전이므로 Docker CLI로 실행한다. 해당 파일을 도입하면 이 문서도 갱신한다.
+Docker CLI를 직접 사용하는 절차다. Compose를 이용한 실행은 [Docker Compose 문서](compose.md)를 참조한다.
 
 ## 이미지 준비
 
@@ -102,4 +102,4 @@ docker volume rm lilboard-local-pgdata
 | 호스트 8080 바인딩 실패 | 호스트 포트 사용 여부 확인. `127.0.0.1:8081:8080`처럼 호스트 포트만 변경 가능 |
 | 새 환경 변수·이미지가 적용되지 않음 | `docker restart` 대신 앱 컨테이너를 제거하고 다시 생성 |
 
-현재 완료된 검증은 이미지 빌드, 외부 PostgreSQL 연결, Flyway V1·JPA 검증과 비루트 실행이다. 이 문서의 API 요청과 재기동 데이터 유지 절차는 사용 예시이며, 실제 수행 여부는 체크리스트의 검증 기록과 구분한다.
+Docker CLI 방식에서는 이미지 빌드·외부 PostgreSQL 연결·Flyway V1·JPA 검증·비루트 실행을 확인했다. API 생성과 앱 재시작·컨테이너 재생성 후 데이터 유지는 이후 Compose 방식으로 검증했다. 이 문서의 수동 명령 전체를 그대로 실행한 결과와 구분하며, 자세한 근거는 [체크리스트](../devops-checklist.md)의 각 검증 기록을 참조한다.

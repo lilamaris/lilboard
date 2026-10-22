@@ -12,7 +12,7 @@
 | P2 | 첫 운영 배포 전 갖출 배포·복구·관찰성 구성 |
 | P3 | 협업 편의와 서비스 확장에 따른 최적화 |
 
-P0를 우선 진행하되, 독립적인 P1 로컬 컨테이너 구성은 병행할 수 있다. 배포 대상·레지스트리·시크릿 관리 방식은 이미지 게시·배포 인증 등 해당 결정에 의존하는 작업 전에 확정한다.
+P0를 우선 진행하되, 독립적인 P1 공통 컨테이너 구성과 로컬 실행 검증은 병행할 수 있다. 배포 대상·레지스트리·시크릿 관리 방식은 이미지 게시·배포 인증 등 해당 결정에 의존하는 작업 전에 확정한다.
 플랫폼 설정 활성화와 실제 차단 동작 검증은 별도 항목으로 관리한다. 아래 플랫폼 상태는 기록된 확인 시점 기준이다.
 
 ## 완료
@@ -53,15 +53,18 @@ P0를 우선 진행하되, 독립적인 P1 로컬 컨테이너 구성은 병행�
 
 ## P1: 이미지와 실행 환경 준비
 
+파일 구성·이미지 설명·Compose·Docker CLI·JVM 실행 방법은 [배포와 실행](deployment/README.md)을 참조한다.
+Dockerfile·`.dockerignore`와 공통 문서는 `21291db`에 반영했다. Compose·`.env.example` 및 후속 문서는 본 브랜치에서 구성·검증했으며, 원격 CI·운영 배포 확인과 구분한다.
+
 | 상태 | 항목 | 완료 기준·설정·검증 근거 |
 |:---:|---|---|
 | ☐ | 배포 대상·레지스트리·Runner·시크릿 관리 방식 결정 | 아래 결정 항목을 ADR에 기록한 뒤 관련 구성 진행 |
-| ☐ | `Dockerfile`(multi-stage 또는 layered jar, 비루트 사용자, OCI 레이블) | 빌드한 이미지가 비루트로 실행되고 외부 DB 설정으로 기동되는지 확인 |
-| ☐ | `.dockerignore` | Git 메타데이터·시크릿·불필요한 로컬 산출물이 빌드 컨텍스트에 포함되지 않는지 확인 |
-| ☐ | `compose.yaml`(PostgreSQL + healthcheck, 앱의 `depends_on: service_healthy`) | 새 볼륨에서 DB·앱 기동 및 재기동 확인 |
-| ☐ | `.env.example` | 필요한 환경 변수·설명·안전한 예시를 제공하고 실제 자격 증명은 포함하지 않음 |
+| ☑ | `Dockerfile`(multi-stage 또는 layered jar, 비루트 사용자, OCI 레이블) | `board-service/launcher/Dockerfile`: Java 21 JDK 빌드 → JRE 런타임, UID/GID 10001, OCI title·source 레이블(`21291db`). 이미지 빌드 및 외부 PostgreSQL 연결·prod 기동 확인(2026-10-23). 아래 로컬 이미지 검증 기록 참조 |
+| ☑ | `.dockerignore` | 루트에 Git·IDE·Gradle 캐시·빌드 산출물·환경 파일·키 파일 제외 설정 추가(`21291db`). 임시 검증 이미지에서 Git·캐시·산출물 제외 및 wrapper·`port/out` 소스 보존 확인(2026-10-23). 아래 검증 기록 참조 |
+| ☑ | `compose.yaml`(PostgreSQL + healthcheck, 앱의 `depends_on: service_healthy`) | 앱·PostgreSQL 구성, 소스 빌드·기존 이미지 선택, DB healthcheck·볼륨·재시작 정책. 새 볼륨 기동·API·앱 재시작·down/up 데이터 유지 확인(2026-10-23). 아래 Compose 검증 기록 참조 |
+| ☑ | `.env.example` | DB·이미지·바인딩 주소·포트 설명 및 예시 제공. 비밀번호는 빈 값이며 미설정 시 Compose 실패 확인. `.env` Git 제외·예시 추적 허용 확인(2026-10-23) |
 | ☐ | `scripts/` | 문서화된 명령으로 로컬 기동·종료·검증을 재현하고 데이터 삭제 명령은 구분 |
-| ☐ | 이미지 빌드·push와 git SHA·릴리스 태그 정책 | 소스 커밋과 이미지 digest 추적, `0.0.1-SNAPSHOT` 버전 정책 정리 |
+| ☐ | 이미지 빌드·push와 git SHA·릴리스 태그 정책 | Dockerfile 수동 빌드는 검증 완료. CI 이미지 빌드·push, 소스 SHA·이미지 digest 추적 및 `0.0.1-SNAPSHOT` 릴리스 태그 정책은 미구성 |
 | ☐ | SBOM 생성(cyclonedx 또는 syft) | 해당 이미지 digest와 연결해 보관 |
 | ☐ | 이미지 스캔(Trivy 등) | 차단 심각도와 예외 승인·만료 정책을 정하고 취약 이미지 차단 확인 |
 | ☐ | GitHub Environments(dev/staging/prod)와 배포 인증 | 클라우드 사용 시 OIDC 신뢰 조건을 저장소·환경에 한정하고 최소 권한 확인 |
@@ -72,7 +75,7 @@ P0를 우선 진행하되, 독립적인 P1 로컬 컨테이너 구성은 병행�
 
 | 상태 | 항목 | 완료 기준·설정·검증 근거 |
 |:---:|---|---|
-| ☐ | 런타임 정의(Kubernetes manifest/Helm, ECS task definition 또는 VM 실행 구성) | 리소스·포트·환경 변수·재시작 정책을 선언하고 재현 가능한 기동 확인 |
+| ☐ | 운영 런타임 정의(Compose/VM, Kubernetes manifest/Helm 또는 ECS task definition) | Compose 실행·데이터 유지는 로컬 검증 완료. 실제 운영 대상 확정, 리소스·네트워크·시크릿 등 운영 설정 및 해당 환경의 기동 검증은 미완료 |
 | ☐ | probe(liveness/readiness)와 종료 정책 | 트래픽 수신 조건과 프로세스 재시작 조건을 분리하고 종료 유예 시간 내 요청 처리 확인 |
 | ☐ | HikariCP 풀·연결 타임아웃 | DB 연결 한도와 장애 시 응답 시간을 고려해 설정하고 연결 실패 동작 확인 |
 | ☐ | 배포 워크플로(rollout → readiness/스모크 테스트 → 실패 시 앱 rollback) | 실패 배포를 주입해 이전 이미지 digest 복구 확인 |
@@ -108,14 +111,13 @@ P0를 우선 진행하되, 독립적인 P1 로컬 컨테이너 구성은 병행�
 
 | 구분 | 내용 |
 |---|---|
-| 배포 대상 | Kubernetes / ECS / VM — 런타임·인증·네트워크 구성 전에 결정 |
+| 운영 배포 대상 | Kubernetes / ECS / VM(Compose 포함) — 공통 이미지·Compose는 구성했으며 실제 운영 런타임·인증·네트워크 구성 전에 결정 |
 | 이미지 레지스트리 | GHCR / ACR / ECR |
-| Runner | GitHub-hosted / self-hosted |
+| 이미지 빌드·배포 Runner | GitHub-hosted / self-hosted 결정 필요. 기존 품질 CI는 `ubuntu-latest` GitHub-hosted 사용 |
 | 시크릿 관리 방식 | GitHub Environments secrets / 외부 시크릿 저장소 |
-| 통합 테스트 | 기본 `test`에 포함 / 태그로 분리하되 필수 CI job에서 실행 |
 | 운영 승인·복구 목표 | 승인 담당자, RPO(허용 데이터 손실 시간), RTO(목표 복구 시간) |
 
-결정은 `docs/adr/`에 배경·선택·영향과 함께 기록한다.
+결정은 `docs/adr/`에 배경·선택·영향과 함께 기록한다. 통합 테스트 실행 방식은 기본 `test` 및 필수 CI 빌드에 포함하는 것으로 확정되어 결정 필요 목록에서 제외했다.
 
 ## 플랫폼 설정 상태 (2026-10-21 확인·적용)
 
@@ -194,10 +196,39 @@ launcher 제외 유지 정책은 [ADR](adr/0001-launcher-coverage-policy.md)로 
 |---|---|
 | 검증 일자 | 2026-10-21 (Asia/Seoul), `f9871f1`에 반영된 테스트를 커밋 전 작업 트리에서 검증 |
 | 테스트 | `board-service/launcher/src/test/java/com/lilamaris/lilboard/board/launcher/PostgresFlywayIntegrationTest.java` |
-| DB | Testcontainers `postgres:17.6-alpine`. 향후 Compose·운영 버전 결정 시 함께 정렬한다. |
+| DB | Testcontainers `postgres:17.6-alpine`. 현재 Compose도 동일 버전이며, 향후 운영 DB 버전 결정 시 함께 정렬한다. |
 | 설정 | 기존 `prod` 프로파일(Flyway 활성화, JPA `validate`)을 사용하며, 컨테이너의 임시 접속 정보를 명령행 인자로 전달한다. H2 `test` 프로파일은 사용하지 않는다. |
 | 시나리오 | 빈 DB 최초 기동·V1 적용, 게시판 저장·조회, 같은 DB 컨테이너를 유지하고 앱 컨텍스트 종료·재생성 후 V1 중복 적용 없이 데이터 유지 |
 | 명령 | `./gradlew :board-service:launcher:test --tests '*PostgresFlywayIntegrationTest' --console=plain` |
 | 결과 | 테스트 3개 성공, 실패·오류·skip 0. 후속 `./gradlew build --console=plain`도 성공하여 기존 테스트·포맷·커버리지 게이트 통과 확인. 보고서: `board-service/launcher/build/reports/tests/test/index.html` |
 | CI | 별도 태그·job으로 분리하지 않고 기본 테스트에 포함한다. 컨테이너는 테스트마다 새로 생성·종료하고, 재기동 시나리오에서만 두 앱 컨텍스트가 같은 DB를 사용한다. |
 | 보충 | 원격 CI 실행 결과 확인 완료(2026-10-21). run `39493409122` artifact `test-reports`에서 `PostgresFlywayIntegrationTest` 포함, testsuite 12개·tests 200 성공. Docker 사전 확인 step 실행 확인. |
+
+## 로컬 이미지 검증 기록
+
+- 대상: `2aa70e5` 기반 `feat/p1-runtime-environment`의 미커밋 변경, 2026-10-23(Asia/Seoul).
+- 저장소 루트를 빌드 컨텍스트로 사용한다. Dockerfile은 서비스의 launcher 모듈에 둔다.
+- 빌드: `docker build -f board-service/launcher/Dockerfile -t lilboard-board:local .`
+- 런타임 설정: `SPRING_PROFILES_ACTIVE=prod`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`를 실행 시 주입한다. 이미지에 접속 정보를 저장하지 않는다. 포트는 8080이며 JVM 옵션은 `JAVA_TOOL_OPTIONS`로 전달할 수 있다.
+- 이미지 빌드는 `:board-service:launcher:bootJar`만 실행한다. 테스트·커버리지·포맷 검사는 CI 또는 별도 Gradle 명령으로 실행하며 이미지 빌드 성공과 구분한다.
+- 컨텍스트 검증: 동일 루트 컨텍스트를 복사한 임시 이미지에서 `.git`·`.gradle`·`.aws`·launcher/build·build-logic/convention/build 부재, Gradle wrapper JAR·`port/out/BoardSavePort.java` 존재 확인. `out`·`build`·`bin` 제외 패턴에는 `src/main`·`src/test` 하위 소스 예외를 적용했다.
+- 이미지 빌드 성공: `lilboard-board:local`, image config ID `sha256:aed1860b61c5d455479dce8b3b18c5f31592af9d81b0426fb1e18b77f5d183bb`.
+- 기동 검증: 임시 Docker 네트워크의 `postgres:17.6-alpine`에 `prod` 프로파일과 `DB_*`를 전달해 앱 기동 성공. Tomcat 8080 기동, Flyway V1 성공 이력 1건, JPA `validate` 통과, 실행 UID 10001 확인. 검증 후 임시 앱·DB 컨테이너와 DB 볼륨·네트워크 정리.
+- `./gradlew spotlessApply spotlessCheck --console=plain` 및 `git diff --check` 통과. Java 동작 변경이 없어 단위 테스트·전체 빌드는 별도 실행하지 않았다.
+- 당시 이미지 검증에서는 Compose·API·재기동을 실행하지 않았다. 이후 Compose로 수행한 API·데이터 유지 검증은 아래 별도 기록을 참조한다. 원격 이미지 게시 및 이미지 빌드 CI는 아직 미구성이다.
+
+- 사용 문서 추가(2026-10-23): [배포와 실행](deployment/README.md)에 공통 이미지 구성 문서와 로컬 실행 예시를 나누어 정리했다. Dockerfile·`.dockerignore` 설명은 환경 공통으로 관리하며, 수동 기동·종료·데이터 삭제 예시는 로컬 실행 문서에서 관리한다. 문서의 명령은 기존 기동 검증 결과와 대조하고 셸 구문·상대 링크·포맷을 검사했다. 이번 문서 작업에서 컨테이너·API·재기동 검증은 재실행하지 않았다.
+
+## Compose 검증 기록
+
+- 대상: `21291db` 기반 `feat/p1-runtime-environment`의 미커밋 변경, 2026-10-23(Asia/Seoul). 사용 방법은 [Docker Compose 문서](deployment/compose.md)를 참조한다.
+- 구성: 앱 `build`·`image` 병행, DB `postgres:17.6-alpine`, `service_healthy` 의존, named volume, `unless-stopped` 재시작. DB 호스트 포트 비공개, 앱은 기본 loopback 바인딩.
+- 환경: Docker Compose 5.6.0. 기존 검증 이미지 `lilboard-board:local` 사용. 실제 `.env` 대신 임시 셸 환경 변수를 주입하고 `--env-file /dev/null`로 사용자 설정을 배제했다.
+- 설정 검사: `docker compose ... config --quiet`에 해당하는 검사에서 빈 비밀번호 실패 확인, JSON 렌더링으로 DB healthcheck 의존 및 DB 호스트 포트 미공개 확인. `git check-ignore --no-index`로 `.env` 제외·`.env.example` 허용 확인.
+- 실행: 별도 프로젝트 `lilboard-p1-check`와 임시 호스트 포트로 `up -d --no-build --wait --wait-timeout 90`, HTTP 준비 상태 별도 대기, `POST /api/boards`의 HTTP 201·ID·DB 저장 1건 확인. 실행 UID 10001 확인.
+- 재기동: `restart board` 후 저장 행 1건 유지. `down` 후 같은 프로젝트로 다시 `up`하여 데이터 1건 유지 및 Flyway 성공 이력 1건 확인.
+- 정리: 검증 프로젝트에만 `down --volumes`를 실행해 임시 컨테이너·네트워크·볼륨 제거.
+- 문서 셸 구문 20개·상대 링크·`git diff --check`·Spotless 검사 통과. Java 동작 변경이 없어 단위 테스트·전체 빌드는 재실행하지 않았다.
+- 미확인: 이번 작업에서 Compose의 소스 재빌드·레지스트리 pull·원격 CI·운영 배포는 실행하지 않았다. 소스 이미지 빌드 자체의 성공 근거는 앞선 로컬 이미지 검증 기록에 있다. Compose 구성 완료는 운영 배포 준비 완료와 구분한다.
+
+- 실행 안내 정리(2026-10-23): 루트 README는 Compose·Docker CLI·JVM 실행 방법과 상세 문서 링크만 제공한다. 기존 프로파일·`bootRun` 설명은 [JVM 실행 문서](deployment/jvm-runtime.md)로 이동하고, 빌드·테스트의 Docker 요구사항은 README 빌드 섹션에 유지했다.

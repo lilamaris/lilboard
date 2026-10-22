@@ -11,18 +11,19 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
 @Service
 @RequiredArgsConstructor
 public class CreateBoardService implements CreateBoardUseCase {
-
     private final BoardSavePort boardSavePort;
     private final UuidGenerator uuidGenerator;
     private final Clock clock;
 
     @Override
+    @Transactional
     public CreateBoardResult create(CreateBoardCommand command) {
         UUID id = uuidGenerator.generate();
         Instant createdAt = clock.instant();

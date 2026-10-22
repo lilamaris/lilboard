@@ -53,11 +53,13 @@ P0를 우선 진행하되, 독립적인 P1 로컬 컨테이너 구성은 병행�
 
 ## P1: 이미지와 실행 환경 준비
 
+파일 구성·이미지 설명·빌드 및 수동 실행 방법은 [배포와 실행](deployment/README.md)을 참조한다.
+
 | 상태 | 항목 | 완료 기준·설정·검증 근거 |
 |:---:|---|---|
 | ☐ | 배포 대상·레지스트리·Runner·시크릿 관리 방식 결정 | 아래 결정 항목을 ADR에 기록한 뒤 관련 구성 진행 |
-| ☐ | `Dockerfile`(multi-stage 또는 layered jar, 비루트 사용자, OCI 레이블) | 빌드한 이미지가 비루트로 실행되고 외부 DB 설정으로 기동되는지 확인 |
-| ☐ | `.dockerignore` | Git 메타데이터·시크릿·불필요한 로컬 산출물이 빌드 컨텍스트에 포함되지 않는지 확인 |
+| ☑ | `Dockerfile`(multi-stage 또는 layered jar, 비루트 사용자, OCI 레이블) | `board-service/launcher/Dockerfile`: Java 21 JDK 빌드 → JRE 런타임, UID/GID 10001, OCI title·source 레이블. 이미지 빌드 및 외부 PostgreSQL 연결·prod 기동 확인(2026-10-23). 아래 로컬 이미지 검증 기록 참조 |
+| ☑ | `.dockerignore` | 루트에 Git·IDE·Gradle 캐시·빌드 산출물·환경 파일·키 파일 제외 설정 추가. 임시 검증 이미지에서 Git·캐시·산출물 제외 및 wrapper·`port/out` 소스 보존 확인(2026-10-23). 아래 검증 기록 참조 |
 | ☐ | `compose.yaml`(PostgreSQL + healthcheck, 앱의 `depends_on: service_healthy`) | 새 볼륨에서 DB·앱 기동 및 재기동 확인 |
 | ☐ | `.env.example` | 필요한 환경 변수·설명·안전한 예시를 제공하고 실제 자격 증명은 포함하지 않음 |
 | ☐ | `scripts/` | 문서화된 명령으로 로컬 기동·종료·검증을 재현하고 데이터 삭제 명령은 구분 |
@@ -201,3 +203,18 @@ launcher 제외 유지 정책은 [ADR](adr/0001-launcher-coverage-policy.md)로 
 | 결과 | 테스트 3개 성공, 실패·오류·skip 0. 후속 `./gradlew build --console=plain`도 성공하여 기존 테스트·포맷·커버리지 게이트 통과 확인. 보고서: `board-service/launcher/build/reports/tests/test/index.html` |
 | CI | 별도 태그·job으로 분리하지 않고 기본 테스트에 포함한다. 컨테이너는 테스트마다 새로 생성·종료하고, 재기동 시나리오에서만 두 앱 컨텍스트가 같은 DB를 사용한다. |
 | 보충 | 원격 CI 실행 결과 확인 완료(2026-10-21). run `39493409122` artifact `test-reports`에서 `PostgresFlywayIntegrationTest` 포함, testsuite 12개·tests 200 성공. Docker 사전 확인 step 실행 확인. |
+
+## 로컬 이미지 검증 기록
+
+- 대상: `2aa70e5` 기반 `feat/p1-runtime-environment`의 미커밋 변경, 2026-10-23(Asia/Seoul).
+- 저장소 루트를 빌드 컨텍스트로 사용한다. Dockerfile은 서비스의 launcher 모듈에 둔다.
+- 빌드: `docker build -f board-service/launcher/Dockerfile -t lilboard-board:local .`
+- 런타임 설정: `SPRING_PROFILES_ACTIVE=prod`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`를 실행 시 주입한다. 이미지에 접속 정보를 저장하지 않는다. 포트는 8080이며 JVM 옵션은 `JAVA_TOOL_OPTIONS`로 전달할 수 있다.
+- 이미지 빌드는 `:board-service:launcher:bootJar`만 실행한다. 테스트·커버리지·포맷 검사는 CI 또는 별도 Gradle 명령으로 실행하며 이미지 빌드 성공과 구분한다.
+- 컨텍스트 검증: 동일 루트 컨텍스트를 복사한 임시 이미지에서 `.git`·`.gradle`·`.aws`·launcher/build·build-logic/convention/build 부재, Gradle wrapper JAR·`port/out/BoardSavePort.java` 존재 확인. `out`·`build`·`bin` 제외 패턴에는 `src/main`·`src/test` 하위 소스 예외를 적용했다.
+- 이미지 빌드 성공: `lilboard-board:local`, image config ID `sha256:aed1860b61c5d455479dce8b3b18c5f31592af9d81b0426fb1e18b77f5d183bb`.
+- 기동 검증: 임시 Docker 네트워크의 `postgres:17.6-alpine`에 `prod` 프로파일과 `DB_*`를 전달해 앱 기동 성공. Tomcat 8080 기동, Flyway V1 성공 이력 1건, JPA `validate` 통과, 실행 UID 10001 확인. 검증 후 임시 앱·DB 컨테이너와 DB 볼륨·네트워크 정리.
+- `./gradlew spotlessApply spotlessCheck --console=plain` 및 `git diff --check` 통과. Java 동작 변경이 없어 단위 테스트·전체 빌드는 별도 실행하지 않았다.
+- Compose·API 스모크 테스트·재기동 데이터 유지·원격 이미지 게시 및 CI 검증은 이번 범위에 포함하지 않았다.
+
+- 사용 문서 추가(2026-10-23): [배포와 실행](deployment/README.md)에 공통 이미지 구성 문서와 로컬 실행 예시를 나누어 정리했다. Dockerfile·`.dockerignore` 설명은 환경 공통으로 관리하며, 수동 기동·종료·데이터 삭제 예시는 로컬 실행 문서에서 관리한다. 문서의 명령은 기존 기동 검증 결과와 대조하고 셸 구문·상대 링크·포맷을 검사했다. 이번 문서 작업에서 컨테이너·API·재기동 검증은 재실행하지 않았다.

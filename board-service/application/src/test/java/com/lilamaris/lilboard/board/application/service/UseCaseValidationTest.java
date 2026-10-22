@@ -7,18 +7,23 @@ import static org.mockito.Mockito.*;
 import com.lilamaris.lilboard.board.application.port.in.*;
 import com.lilamaris.lilboard.board.application.port.in.command.*;
 import com.lilamaris.lilboard.board.application.port.in.query.FindBoardQuery;
+import com.lilamaris.lilboard.board.application.port.in.query.FindBoardsQuery;
 import com.lilamaris.lilboard.board.application.port.out.*;
 import com.lilamaris.lilboard.board.domain.Board;
+import com.lilamaris.lilboard.kernel.pagination.OffsetPage;
+import com.lilamaris.lilboard.kernel.pagination.OffsetPageRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -29,12 +34,14 @@ class UseCaseValidationTest {
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
     private AnnotationConfigApplicationContext context;
     private BoardFindPort findPort;
+    private BoardListPort listPort;
     private BoardSavePort savePort;
     private UuidGenerator uuidGenerator;
 
     @BeforeEach
     void setUp() {
         findPort = mock(BoardFindPort.class);
+        listPort = mock(BoardListPort.class);
         savePort = mock(BoardSavePort.class);
         uuidGenerator = mock(UuidGenerator.class);
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
@@ -46,12 +53,42 @@ class UseCaseValidationTest {
         context.registerBean(
                 UpdateBoardService.class, () -> new UpdateBoardService(savePort, findPort, clock));
         context.registerBean(FindBoardService.class, () -> new FindBoardService(findPort));
+        context.registerBean(FindBoardsService.class, () -> new FindBoardsService(listPort));
         context.refresh();
     }
 
     @AfterEach
     void tearDown() {
         context.close();
+    }
+
+    @Test
+    @DisplayName("목록 조회 조건이 null이면 검증 예외를 던지고 목록 조회를 실행하지 않는다")
+    void rejectsNullListQuery() {
+        assertThatThrownBy(() -> context.getBean(FindBoardsUseCase.class).find(null))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(listPort);
+    }
+
+    @Test
+    @DisplayName("목록 조회의 페이지 요청이 null이면 검증 예외를 던지고 목록 조회를 실행하지 않는다")
+    void rejectsNullPageRequest() {
+        assertThatThrownBy(
+                        () ->
+                                context.getBean(FindBoardsUseCase.class)
+                                        .find(new FindBoardsQuery(null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(listPort);
+    }
+
+    @Test
+    @DisplayName("유효한 목록 조회 조건이면 메서드 검증을 통과하고 조회 결과를 반환한다")
+    void acceptsListQuery() {
+        var request = OffsetPageRequest.of(0, 20);
+        OffsetPage<Board> page = OffsetPage.of(List.of(), 0, 20, 0);
+        when(listPort.findAll(request)).thenReturn(page);
+        assertThat(context.getBean(FindBoardsUseCase.class).find(new FindBoardsQuery(request)))
+                .isEqualTo(OffsetPage.of(List.of(), 0, 20, 0));
     }
 
     @ParameterizedTest

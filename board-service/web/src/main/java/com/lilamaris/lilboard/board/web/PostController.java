@@ -1,8 +1,11 @@
 package com.lilamaris.lilboard.board.web;
 
 import com.lilamaris.lilboard.board.application.port.in.CreatePostUseCase;
+import com.lilamaris.lilboard.board.application.port.in.UpdatePostUseCase;
 import com.lilamaris.lilboard.board.application.port.in.command.CreatePostCommand;
+import com.lilamaris.lilboard.board.application.port.in.command.UpdatePostCommand;
 import com.lilamaris.lilboard.board.application.port.in.result.CreatePostResult;
+import com.lilamaris.lilboard.board.application.port.in.result.UpdatePostResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -10,8 +13,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -22,9 +28,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/posts")
 public class PostController {
     private final CreatePostUseCase createPostUseCase;
+    private final UpdatePostUseCase updatePostUseCase;
 
-    public PostController(CreatePostUseCase createPostUseCase) {
+    public PostController(
+            CreatePostUseCase createPostUseCase, UpdatePostUseCase updatePostUseCase) {
         this.createPostUseCase = createPostUseCase;
+        this.updatePostUseCase = updatePostUseCase;
     }
 
     @Operation(
@@ -69,5 +78,26 @@ public class PostController {
     @ResponseStatus(HttpStatus.CREATED)
     public CreatePostResult create(@Valid @RequestBody CreatePostCommand command) {
         return createPostUseCase.create(command);
+    }
+
+    @Operation(
+            summary = "게시글 수정",
+            description = "게시글의 제목과 본문을 수정합니다. 제목은 최대 300자, 본문은 최대 50000자이며 공백만 입력할 수 없습니다.")
+    @ApiResponse(
+            responseCode = "200",
+            description = "게시글 수정 성공",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UpdatePostResult.class)))
+    @ApiResponse(
+            responseCode = "400",
+            description = "잘못된 게시글 ID, 필수 값 누락, 공백, 최대 길이 초과 또는 잘못된 JSON 요청",
+            content = @Content)
+    @PutMapping("/{postId}")
+    public UpdatePostResult update(
+            @PathVariable("postId") UUID postId, @Valid @RequestBody UpdatePostRequest request) {
+        return updatePostUseCase.update(
+                new UpdatePostCommand(postId, request.title(), request.content()));
     }
 }

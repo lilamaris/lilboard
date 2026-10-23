@@ -2,11 +2,15 @@ package com.lilamaris.lilboard.board.web;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.lilamaris.lilboard.board.application.port.in.CreatePostUseCase;
+import com.lilamaris.lilboard.board.application.port.in.UpdatePostUseCase;
 import com.lilamaris.lilboard.board.application.port.in.command.CreatePostCommand;
+import com.lilamaris.lilboard.board.application.port.in.command.UpdatePostCommand;
 import com.lilamaris.lilboard.board.application.port.in.result.CreatePostResult;
+import com.lilamaris.lilboard.board.application.port.in.result.UpdatePostResult;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -21,12 +25,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class PostControllerTest {
     private CreatePostUseCase useCase;
+    private UpdatePostUseCase updateUseCase;
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         useCase = mock(CreatePostUseCase.class);
-        mvc = MockMvcBuilders.standaloneSetup(new PostController(useCase)).build();
+        updateUseCase = mock(UpdatePostUseCase.class);
+        mvc = MockMvcBuilders.standaloneSetup(new PostController(useCase, updateUseCase)).build();
     }
 
     @Test
@@ -92,6 +98,102 @@ class PostControllerTest {
         mvc.perform(post("/api/posts").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(useCase);
+    }
+
+    @Test
+    @DisplayName("유효한 수정 요청이면 경로의 ID로 수정하고 결과와 200을 반환한다")
+    void updatesPost() throws Exception {
+        UUID id = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID boardId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        Instant createdAt = Instant.parse("2026-01-01T00:00:00Z");
+        Instant updatedAt = Instant.parse("2026-01-02T00:00:00Z");
+        when(updateUseCase.update(new UpdatePostCommand(id, "수정 제목", "첫 번째 줄\n두 번째 줄")))
+                .thenReturn(
+                        new UpdatePostResult(
+                                id, boardId, "수정 제목", "첫 번째 줄\n두 번째 줄", createdAt, updatedAt));
+
+        mvc.perform(
+                        put("/api/posts/{postId}", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"title\":\"수정 제목\",\"content\":\"첫 번째 줄\\n두 번째 줄\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.boardId").value(boardId.toString()))
+                .andExpect(jsonPath("$.title").value("수정 제목"))
+                .andExpect(jsonPath("$.content").value("첫 번째 줄\n두 번째 줄"))
+                .andExpect(jsonPath("$.createdAt").value(createdAt.toString()))
+                .andExpect(jsonPath("$.updatedAt").value(updatedAt.toString()));
+    }
+
+    @Test
+    @DisplayName("제목 300자와 본문 50000자의 경계값이면 수정에 성공한다")
+    void acceptsMaximumUpdateLengths() throws Exception {
+        UUID id = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID boardId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        String title = "a".repeat(300);
+        String content = "b".repeat(50000);
+        when(updateUseCase.update(new UpdatePostCommand(id, title, content)))
+                .thenReturn(
+                        new UpdatePostResult(
+                                id,
+                                boardId,
+                                title,
+                                content,
+                                Instant.parse("2026-01-01T00:00:00Z"),
+                                Instant.parse("2026-01-02T00:00:00Z")));
+
+        mvc.perform(
+                        put("/api/posts/{postId}", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"title\":\""
+                                                + title
+                                                + "\",\"content\":\""
+                                                + content
+                                                + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value(title))
+                .andExpect(jsonPath("$.content").value(content));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidUpdateBodies")
+    @DisplayName("수정 요청의 필수 값 누락·공백·길이 초과 또는 잘못된 JSON이면 400을 반환하고 수정하지 않는다")
+    void rejectsInvalidUpdateBody(String body) throws Exception {
+        mvc.perform(
+                        put("/api/posts/00000000-0000-0000-0000-000000000001")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(updateUseCase);
+    }
+
+    @Test
+    @DisplayName("게시글 ID가 UUID 형식이 아니면 400을 반환하고 수정하지 않는다")
+    void rejectsInvalidPostId() throws Exception {
+        mvc.perform(
+                        put("/api/posts/invalid-id")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"title\":\"제목\",\"content\":\"본문\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(updateUseCase);
+    }
+
+    static Stream<String> invalidUpdateBodies() {
+        return Stream.of(
+                "{}",
+                "{\"title\":\"제목\"}",
+                "{\"content\":\"본문\"}",
+                "{\"title\":\"\",\"content\":\"본문\"}",
+                "{\"title\":\"제목\",\"content\":\"\"}",
+                "{\"title\":\" \",\"content\":\"본문\"}",
+                "{\"title\":\"제목\",\"content\":\" \"}",
+                "{\"title\":null,\"content\":\"본문\"}",
+                "{\"title\":\"제목\",\"content\":null}",
+                "{\"title\":\"" + "a".repeat(301) + "\",\"content\":\"본문\"}",
+                "{\"title\":\"제목\",\"content\":\"" + "b".repeat(50001) + "\"}",
+                "{",
+                "");
     }
 
     static Stream<String> invalidBodies() {

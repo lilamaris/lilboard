@@ -3,11 +3,13 @@ package com.lilamaris.lilboard.board.jpa;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.lilamaris.lilboard.board.application.port.out.PostFindPort;
+import com.lilamaris.lilboard.board.application.port.out.PostListPort;
 import com.lilamaris.lilboard.board.application.port.out.PostSavePort;
 import com.lilamaris.lilboard.board.domain.Board;
 import com.lilamaris.lilboard.board.domain.Post;
 import com.lilamaris.lilboard.board.jpa.repository.BoardRepository;
 import com.lilamaris.lilboard.board.jpa.repository.PostRepository;
+import com.lilamaris.lilboard.kernel.pagination.OffsetPageRequest;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
@@ -37,6 +39,8 @@ class PostPortJpaAdapterTest {
     @Autowired private PostSavePort savePort;
 
     @Autowired private PostFindPort findPort;
+
+    @Autowired private PostListPort listPort;
 
     @Autowired private PostRepository repository;
 
@@ -88,6 +92,87 @@ class PostPortJpaAdapterTest {
                             assertThat(found.getCreatedAt()).isEqualTo(CREATED_AT);
                             assertThat(found.getUpdatedAt()).isEqualTo(updatedAt);
                         });
+    }
+
+    @Test
+    @DisplayName("목록 첫 페이지는 생성 시각과 ID 내림차순으로 조회하고 전체 개수를 반환한다")
+    void findsFirstPageInStableOrder() {
+        savePageFixtures();
+
+        var page = listPort.findAll(OffsetPageRequest.of(0, 2));
+
+        assertThat(page.items()).extracting(Post::getTitle).containsExactly("동시 생성", "최신");
+        assertThat(page.page()).isZero();
+        assertThat(page.size()).isEqualTo(2);
+        assertThat(page.totalElements()).isEqualTo(3);
+        assertThat(page.totalPages()).isEqualTo(2);
+        assertThat(page.hasPrevious()).isFalse();
+        assertThat(page.hasNext()).isTrue();
+    }
+
+    @Test
+    @DisplayName("마지막 페이지는 오프셋 이후 남은 게시글과 전체 개수를 반환한다")
+    void findsLastPage() {
+        savePageFixtures();
+
+        var page = listPort.findAll(OffsetPageRequest.of(1, 2));
+
+        assertThat(page.items()).extracting(Post::getTitle).containsExactly("이전");
+        assertThat(page.page()).isEqualTo(1);
+        assertThat(page.size()).isEqualTo(2);
+        assertThat(page.totalElements()).isEqualTo(3);
+        assertThat(page.hasPrevious()).isTrue();
+        assertThat(page.hasNext()).isFalse();
+    }
+
+    @Test
+    @DisplayName("게시글이 없으면 빈 목록과 전체 개수 0을 반환한다")
+    void findsEmptyPage() {
+        var page = listPort.findAll(OffsetPageRequest.of(0, 2));
+
+        assertThat(page.items()).isEmpty();
+        assertThat(page.page()).isZero();
+        assertThat(page.size()).isEqualTo(2);
+        assertThat(page.totalElements()).isZero();
+        assertThat(page.totalPages()).isZero();
+        assertThat(page.hasPrevious()).isFalse();
+        assertThat(page.hasNext()).isFalse();
+    }
+
+    @Test
+    @DisplayName("마지막 페이지를 벗어나면 빈 목록과 실제 전체 개수를 반환한다")
+    void findsPageBeyondLast() {
+        savePageFixtures();
+
+        var page = listPort.findAll(OffsetPageRequest.of(2, 2));
+
+        assertThat(page.items()).isEmpty();
+        assertThat(page.page()).isEqualTo(2);
+        assertThat(page.size()).isEqualTo(2);
+        assertThat(page.totalElements()).isEqualTo(3);
+        assertThat(page.hasPrevious()).isTrue();
+        assertThat(page.hasNext()).isFalse();
+    }
+
+    private void savePageFixtures() {
+        boardRepository.save(Board.of(BOARD_ID, "게시판", "설명", CREATED_AT));
+        savePort.save(
+                Post.of(
+                        UUID.fromString("00000000-0000-0000-0000-000000000003"),
+                        BOARD_ID,
+                        "이전",
+                        "본문",
+                        CREATED_AT));
+        savePort.save(Post.of(POST_ID, BOARD_ID, "최신", "본문", CREATED_AT.plusSeconds(1)));
+        savePort.save(
+                Post.of(
+                        UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                        BOARD_ID,
+                        "동시 생성",
+                        "본문",
+                        CREATED_AT.plusSeconds(1)));
+        entityManager.flush();
+        entityManager.clear();
     }
 
     private Post savePost() {

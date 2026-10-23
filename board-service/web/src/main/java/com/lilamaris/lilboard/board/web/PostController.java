@@ -1,11 +1,18 @@
 package com.lilamaris.lilboard.board.web;
 
 import com.lilamaris.lilboard.board.application.port.in.CreatePostUseCase;
+import com.lilamaris.lilboard.board.application.port.in.FindPostUseCase;
+import com.lilamaris.lilboard.board.application.port.in.FindPostsUseCase;
 import com.lilamaris.lilboard.board.application.port.in.UpdatePostUseCase;
 import com.lilamaris.lilboard.board.application.port.in.command.CreatePostCommand;
 import com.lilamaris.lilboard.board.application.port.in.command.UpdatePostCommand;
+import com.lilamaris.lilboard.board.application.port.in.query.FindPostQuery;
+import com.lilamaris.lilboard.board.application.port.in.query.FindPostsQuery;
 import com.lilamaris.lilboard.board.application.port.in.result.CreatePostResult;
+import com.lilamaris.lilboard.board.application.port.in.result.FindPostResult;
 import com.lilamaris.lilboard.board.application.port.in.result.UpdatePostResult;
+import com.lilamaris.lilboard.kernel.pagination.OffsetPage;
+import com.lilamaris.lilboard.kernel.pagination.OffsetPageRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -15,13 +22,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @Tag(name = "게시글", description = "게시글 관리 API")
 @RestController
@@ -29,11 +39,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class PostController {
     private final CreatePostUseCase createPostUseCase;
     private final UpdatePostUseCase updatePostUseCase;
+    private final FindPostUseCase findPostUseCase;
+    private final FindPostsUseCase findPostsUseCase;
 
     public PostController(
-            CreatePostUseCase createPostUseCase, UpdatePostUseCase updatePostUseCase) {
+            CreatePostUseCase createPostUseCase,
+            UpdatePostUseCase updatePostUseCase,
+            FindPostUseCase findPostUseCase,
+            FindPostsUseCase findPostsUseCase) {
         this.createPostUseCase = createPostUseCase;
         this.updatePostUseCase = updatePostUseCase;
+        this.findPostUseCase = findPostUseCase;
+        this.findPostsUseCase = findPostsUseCase;
     }
 
     @Operation(
@@ -99,5 +116,47 @@ public class PostController {
             @PathVariable("postId") UUID postId, @Valid @RequestBody UpdatePostRequest request) {
         return updatePostUseCase.update(
                 new UpdatePostCommand(postId, request.title(), request.content()));
+    }
+
+    @Operation(summary = "게시글 단건 조회", description = "게시글 ID로 게시글을 조회합니다.")
+    @ApiResponse(
+            responseCode = "200",
+            description = "게시글 조회 성공",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = FindPostResult.class)))
+    @ApiResponse(responseCode = "400", description = "잘못된 게시글 ID", content = @Content)
+    @ApiResponse(responseCode = "404", description = "게시글이 존재하지 않음", content = @Content)
+    @GetMapping("/{postId}")
+    public FindPostResult find(@PathVariable("postId") UUID postId) {
+        try {
+            return findPostUseCase.find(new FindPostQuery(postId));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, exception.getMessage(), exception);
+        }
+    }
+
+    @Operation(
+            summary = "게시글 목록 조회",
+            description =
+                    "생성 시각과 ID 내림차순으로 게시글을 조회합니다. page는 0부터 시작하며 기본값은 0, size는 기본값 20인 양수입니다. offset(page × size)은 2147483647 이하여야 합니다.")
+    @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공")
+    @ApiResponse(
+            responseCode = "400",
+            description = "잘못된 페이지 번호·크기 또는 offset 범위 초과",
+            content = @Content)
+    @GetMapping
+    public OffsetPage<FindPostResult> findAll(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        OffsetPageRequest pageRequest;
+        try {
+            pageRequest = OffsetPageRequest.of(page, size);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 페이지 요청입니다.", exception);
+        }
+        return findPostsUseCase.find(new FindPostsQuery(pageRequest));
     }
 }

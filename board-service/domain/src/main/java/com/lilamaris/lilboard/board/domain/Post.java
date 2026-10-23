@@ -59,4 +59,20 @@ public class Post {
     public static Post of(UUID id, UUID boardId, String title, String content, Instant createdAt) {
         return new Post(id, boardId, title, content, createdAt, null);
     }
+
+    public void updateTitle(String title, Instant updatedAt) {
+        String validatedTitle = StringPrecondition.requireMaxLen(title, MAX_TITLE_LENGTH);
+        update(updatedAt);
+        this.title = validatedTitle;
+    }
+
+    public void updateContent(String content, Instant updatedAt) {
+        String validatedContent = StringPrecondition.requireMaxLen(content, MAX_CONTENT_LENGTH);
+        update(updatedAt);
+        this.content = validatedContent;
+    }
+
+    private void update(Instant updatedAt) {
+        this.updatedAt = TimePrecondition.requireAfterOrEqual(updatedAt, createdAt);
+    }
 }

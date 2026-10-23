@@ -4,9 +4,9 @@
 
 | 파일 | 역할 |
 |---|---|
-| [board-service/launcher/Dockerfile](../../board-service/launcher/Dockerfile) | board-service 실행 JAR 빌드 및 실행 이미지 생성 |
-| [.dockerignore](../../.dockerignore) | 빌드 컨텍스트에서 불필요한 파일 제외 |
-| [application-prod.yml](../../board-service/launcher/src/main/resources/application-prod.yml) | 외부 PostgreSQL 접속·Flyway·JPA 검증 설정 |
+| [board-service/launcher/Dockerfile](../../../board-service/launcher/Dockerfile) | board-service 실행 JAR 빌드 및 실행 이미지 생성 |
+| [.dockerignore](../../../.dockerignore) | 빌드 컨텍스트에서 불필요한 파일 제외 |
+| [application-prod.yml](../../../board-service/launcher/src/main/resources/application-prod.yml) | 외부 PostgreSQL 접속·Flyway·JPA 검증 설정 |
 
 ## 사전 준비
 
@@ -76,4 +76,4 @@ docker build -f board-service/launcher/Dockerfile -t lilboard-board:example .
 
 앱 기동 시 Flyway가 마이그레이션을 수행하고 JPA는 스키마를 `validate`한다. 접속 정보는 이미지를 만들 때 저장하지 않고 실행 환경에서 주입한다. 원격 환경의 시크릿 저장소·주입 방식과 앱·마이그레이션 계정 분리는 별도 결정한다.
 
-실행 방법은 [Docker Compose](compose.md) 또는 [Docker CLI 예시](local-runtime.md)를 참조한다. 레지스트리 게시, 배포 플랫폼별 런타임 정의·인증·네트워크 설정은 아직 구성하지 않았다. 이미지 빌드·기동과 Compose API·데이터 유지의 검증 범위는 [DevOps 체크리스트](../devops-checklist.md)에 각각 기록한다.
+실행 방법은 [Docker Compose](compose.md) 또는 [Docker CLI 예시](local-runtime.md)를 참조한다. 레지스트리 게시, 배포 플랫폼별 런타임 정의·인증·네트워크 설정은 아직 구성하지 않았다. 이미지 빌드·기동과 Compose API·데이터 유지의 검증 범위는 [이미지 검증 기록](../records/container-image.md)과 [Compose 검증 기록](../records/compose.md)에 각각 기록한다. 진행 상태는 [DevOps 체크리스트](../checklist.md)에서 관리한다.

@@ -18,6 +18,6 @@ SPRING_PROFILES_ACTIVE=prod ./gradlew :board-service:launcher:bootRun
 
 H2는 테스트 전용 의존성이며 운영 JAR에 포함되지 않습니다. 프로파일을 지정하지 않은 실행에는 별도 DB 설정이 필요합니다.
 DB 통합 테스트는 H2 기반 검증과 Testcontainers PostgreSQL 기반 검증을 함께 수행합니다. PostgreSQL 테스트는 `prod` 설정으로 Flyway 적용·JPA 스키마 검증·저장 및 조회·앱 재기동 후 데이터 유지를 확인합니다.
-`./gradlew test`와 `build` 실행에는 Docker가 필요하며, PostgreSQL 이미지가 없으면 최초 실행 시 내려받습니다. CI도 기본 테스트 경로에서 실행하며, 원격 실행 결과 확인은 체크리스트에서 별도로 추적합니다.
+`./gradlew test`와 `build` 실행에는 Docker가 필요하며, PostgreSQL 이미지가 없으면 최초 실행 시 내려받습니다. CI도 기본 테스트 경로에서 실행하며, 원격 실행 결과는 [PostgreSQL·Flyway 검증 기록](../records/postgres-flyway.md)에서 확인하고, 진행 상태는 [체크리스트](../checklist.md)에서 추적합니다.
 
 컨테이너를 이용한 실행은 [배포와 실행 문서](README.md)를 참조한다.

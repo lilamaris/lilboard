@@ -1,6 +1,6 @@
 # Docker Compose로 실행
 
-[compose.yaml](../../compose.yaml)은 board-service와 PostgreSQL을 단일 Docker 호스트에서 실행하는 방식이다. 동일한 [앱 이미지](container-image.md)를 사용하며, Compose는 배포·실행 방식 중 하나로 제공한다. Kubernetes·ECS 등 다른 플랫폼을 선택하면 해당 플랫폼의 실행 정의를 별도로 구성한다.
+[compose.yaml](../../../compose.yaml)은 board-service와 PostgreSQL을 단일 Docker 호스트에서 실행하는 방식이다. 동일한 [앱 이미지](container-image.md)를 사용하며, Compose는 배포·실행 방식 중 하나로 제공한다. Kubernetes·ECS 등 다른 플랫폼을 선택하면 해당 플랫폼의 실행 정의를 별도로 구성한다.
 
 모든 명령은 저장소 루트 기준이다. Docker Engine과 Docker Compose 플러그인이 필요하다. 현재 구성은 개발·실행 검증에 사용할 수 있으며, 운영 적용 전에는 아래 운영 항목을 확정해야 한다.
 
@@ -8,9 +8,9 @@
 
 | 파일 | 역할 |
 |---|---|
-| [compose.yaml](../../compose.yaml) | 앱 이미지·빌드 정의, DB 연결, 포트, 데이터 볼륨·healthcheck·재시작 정책 |
-| [.env.example](../../.env.example) | Compose 변수 목록과 안전한 예시. 실제 값은 `.env` 또는 실행 환경에서 제공 |
-| [Dockerfile](../../board-service/launcher/Dockerfile) | 소스 빌드 시 사용할 앱 이미지 정의 |
+| [compose.yaml](../../../compose.yaml) | 앱 이미지·빌드 정의, DB 연결, 포트, 데이터 볼륨·healthcheck·재시작 정책 |
+| [.env.example](../../../.env.example) | Compose 변수 목록과 안전한 예시. 실제 값은 `.env` 또는 실행 환경에서 제공 |
+| [Dockerfile](../../../board-service/launcher/Dockerfile) | 소스 빌드 시 사용할 앱 이미지 정의 |
 
 ### 서비스와 데이터
 
@@ -112,4 +112,4 @@ docker compose down --volumes
 
 현재 앱 포트는 기본적으로 호스트 loopback에만 공개된다. 운영 사용 시 TLS·리버스 프록시·접근 제어와 연결되는 바인딩 주소를 정한다. 또한 자원 제한, 앱 readiness와 장애 대응, 백업·복원, DB 최소 권한 계정·시크릿 교체, 이미지 digest 관리 및 배포·롤백 절차가 필요하다.
 
-구성·실제 검증 상태는 [DevOps 체크리스트](../devops-checklist.md)에, 운영 정책은 [ADR](../adr/)에 기록한다. Compose 파일 추가만으로 운영 배포 준비 완료를 의미하지 않는다.
+구성·실제 검증 상태는 [DevOps 체크리스트](../checklist.md)에, 운영 정책은 [ADR](../adr/)에 기록한다. Compose 파일 추가만으로 운영 배포 준비 완료를 의미하지 않는다.

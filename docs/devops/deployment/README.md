@@ -11,7 +11,8 @@
 
 현재 Dockerfile·`.dockerignore`·Compose·`.env.example`이 구성되어 있다. 실행 스크립트, 이미지 레지스트리 게시와 원격 배포는 후속 작업이며, 관련 문서는 구성에 맞춰 여기에 추가한다.
 
-- 진행 상태와 실제 검증 근거: [DevOps 체크리스트](../devops-checklist.md)
+- 진행 상태: [DevOps 체크리스트](../checklist.md)
+- 실제 검증 근거: [이미지 검증 기록](../records/container-image.md), [Compose 검증 기록](../records/compose.md)
 - 배포 대상·레지스트리·Runner·시크릿 등 정책 결정: [ADR](../adr/)
 
 파일 구성 완료와 실제 동작 확인은 체크리스트에서 구분한다. 문서의 사용 예시만으로 해당 동작의 검증 완료를 의미하지 않는다.

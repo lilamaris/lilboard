@@ -8,6 +8,8 @@ import com.lilamaris.lilboard.board.application.port.in.command.CreateBoardComma
 import com.lilamaris.lilboard.board.domain.Board;
 import com.lilamaris.lilboard.board.jpa.repository.BoardRepository;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 class PostgresFlywayIntegrationTest {
@@ -23,7 +26,7 @@ class PostgresFlywayIntegrationTest {
     private static final Instant CREATED_AT = Instant.parse("2026-01-01T00:00:00Z");
 
     @Test
-    @DisplayName("빈 PostgreSQL에서 prod 설정으로 기동하면 Flyway V1 적용과 JPA 스키마 검증이 성공한다")
+    @DisplayName("빈 PostgreSQL에서 prod 설정으로 기동하면 최신 마이그레이션 적용과 JPA 스키마 검증이 성공한다")
     void migratesEmptyDatabaseAndValidatesJpaSchema() throws Exception {
         try (PostgreSQLContainer postgres = startPostgres();
                 ConfigurableApplicationContext context = startApplication(postgres)) {
@@ -33,11 +36,7 @@ class PostgresFlywayIntegrationTest {
             }
             assertThat(context.getEnvironment().getProperty("spring.jpa.hibernate.ddl-auto"))
                     .isEqualTo("validate");
-            assertThat(context.getBean(Flyway.class).info().applied())
-                    .singleElement()
-                    .satisfies(
-                            migration ->
-                                    assertThat(migration.getVersion().toString()).isEqualTo("1"));
+            assertThat(context.getBean(Flyway.class).info().applied()).isNotEmpty();
             assertThat(context.getBean(Flyway.class).info().pending()).isEmpty();
         }
     }
@@ -61,21 +60,20 @@ class PostgresFlywayIntegrationTest {
     }
 
     @Test
-    @DisplayName("동일 PostgreSQL로 앱을 재기동하면 V1을 중복 적용하지 않고 기존 게시판을 유지한다")
+    @DisplayName("동일 PostgreSQL로 앱을 재기동하면 마이그레이션 이력과 기존 게시판을 유지한다")
     void restartsWithoutReapplyingMigrationAndPreservesData() {
         try (PostgreSQLContainer postgres = startPostgres()) {
             Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+            List<Map<String, Object>> appliedMigrations;
             try (ConfigurableApplicationContext first = startApplication(postgres)) {
                 first.getBean(BoardRepository.class).saveAndFlush(board);
+                appliedMigrations = migrationHistory(first);
+                assertThat(appliedMigrations).isNotEmpty();
             }
 
             try (ConfigurableApplicationContext restarted = startApplication(postgres)) {
-                assertThat(restarted.getBean(Flyway.class).info().applied())
-                        .singleElement()
-                        .satisfies(
-                                migration ->
-                                        assertThat(migration.getVersion().toString())
-                                                .isEqualTo("1"));
+                assertThat(migrationHistory(restarted))
+                        .containsExactlyElementsOf(appliedMigrations);
                 assertThat(restarted.getBean(Flyway.class).info().pending()).isEmpty();
                 assertThat(restarted.getBean(BoardRepository.class).findById(ID))
                         .hasValueSatisfying(
@@ -119,6 +117,12 @@ class PostgresFlywayIntegrationTest {
                                 });
             }
         }
+    }
+
+    private static List<Map<String, Object>> migrationHistory(
+            ConfigurableApplicationContext context) {
+        return new JdbcTemplate(context.getBean(DataSource.class))
+                .queryForList("SELECT * FROM flyway_schema_history ORDER BY installed_rank");
     }
 
     private static PostgreSQLContainer startPostgres() {

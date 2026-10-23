@@ -74,7 +74,7 @@ docker compose exec postgres psql -U lilboard -d lilboard \
     -c 'SELECT version, success FROM flyway_schema_history;'
 ```
 
-DB 이름·사용자를 변경했다면 `psql` 인자도 맞춘다. 기대값은 PostgreSQL healthy, 앱의 Tomcat 8080 기동 로그, UID `10001`, Flyway V1의 `success=t`다. 앱 기동 시 Flyway가 마이그레이션하고 JPA는 스키마를 검증한다.
+DB 이름·사용자를 변경했다면 `psql` 인자도 맞춘다. 기대값은 PostgreSQL healthy, 앱의 Tomcat 8080 기동 로그, UID `10001`, 이미지에 포함된 최신 버전까지의 Flyway 적용 이력과 각 이력의 `success=t`다. 앱 기동 시 Flyway가 마이그레이션하고 JPA는 스키마를 검증한다.
 
 기본 포트에서는 다음 요청이 HTTP 201과 생성 결과를 반환한다. 이 요청은 DB에 게시판을 추가한다.
 

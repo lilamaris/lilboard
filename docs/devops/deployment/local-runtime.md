@@ -60,7 +60,7 @@ docker exec lilboard-local-db psql -U lilboard -d lilboard \
     -c 'SELECT version, success FROM flyway_schema_history;'
 ```
 
-로그에서 Flyway 성공과 Tomcat 8080 기동을 확인한다. UID는 `10001`, Flyway V1 이력의 `success`는 `t`가 기대값이다. 로그 조회 명령 자체의 성공은 앱 준비 완료를 의미하지 않는다.
+로그에서 Flyway 성공과 Tomcat 8080 기동을 확인한다. UID는 `10001`이며, 이미지에 포함된 마이그레이션이 최신 버전까지 적용되고 각 이력의 `success`가 `t`여야 한다. 로그 조회 명령 자체의 성공은 앱 준비 완료를 의미하지 않는다.
 
 선택적으로 게시판 생성 요청으로 API를 확인할 수 있다. 성공 시 HTTP 201과 생성 결과를 반환하며 DB에 행을 추가한다.
 

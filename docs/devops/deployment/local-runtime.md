@@ -102,4 +102,4 @@ docker volume rm lilboard-local-pgdata
 | 호스트 8080 바인딩 실패 | 호스트 포트 사용 여부 확인. `127.0.0.1:8081:8080`처럼 호스트 포트만 변경 가능 |
 | 새 환경 변수·이미지가 적용되지 않음 | `docker restart` 대신 앱 컨테이너를 제거하고 다시 생성 |
 
-Docker CLI 방식에서는 이미지 빌드·외부 PostgreSQL 연결·Flyway V1·JPA 검증·비루트 실행을 확인했다. API 생성과 앱 재시작·컨테이너 재생성 후 데이터 유지는 이후 Compose 방식으로 검증했다. 이 문서의 수동 명령 전체를 그대로 실행한 결과와 구분하며, 자세한 근거는 [체크리스트](../devops-checklist.md)의 각 검증 기록을 참조한다.
+Docker CLI 방식에서는 이미지 빌드·외부 PostgreSQL 연결·Flyway V1·JPA 검증·비루트 실행을 확인했다. API 생성과 앱 재시작·컨테이너 재생성 후 데이터 유지는 이후 Compose 방식으로 검증했다. 이 문서의 수동 명령 전체를 그대로 실행한 결과와 구분하며, 자세한 근거는 [이미지 검증 기록](../records/container-image.md)과 [Compose 검증 기록](../records/compose.md)을 참조한다.

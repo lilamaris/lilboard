@@ -23,7 +23,8 @@ board-service/
   launcher/     # 실행 및 환경 설정
 kernel/         # 공통 코드
 build-logic/    # 공통 빌드·포맷 설정
-docs/           # 배포·실행 문서, DevOps 체크리스트, ADR
+docs/
+  devops/       # DevOps 체크리스트, 항목별 검증 기록, 배포·실행 문서, ADR
 ```
 
 ## 개발 환경
@@ -45,7 +46,7 @@ docs/           # 배포·실행 문서, DevOps 체크리스트, ADR
 
 `check` 단계에서 모듈별 라인 커버리지 게이트(기본 80%)를 검사합니다.
 현재 실행 진입점 모듈(`launcher`)은 `coverage.excludes=*launcher*`로 번들 단위 검사에서 제외합니다.
-기준은 `coverage.minimum`·`coverage.excludes`로 조정합니다. [launcher 제외 정책](docs/adr/0001-launcher-coverage-policy.md)을 확정하고 게이트 실패·제외 동작을 검증했으며, launcher 역할 제한을 위한 ArchUnit 검증은 P0 작업으로 남아 있습니다.
+기준은 `coverage.minimum`·`coverage.excludes`로 조정합니다. [launcher 제외 정책](docs/devops/adr/0001-launcher-coverage-policy.md)을 확정하고 게이트 실패·제외 동작을 검증했으며, launcher 역할 제한을 위한 ArchUnit 검증은 P0 작업으로 남아 있습니다.
 아키텍처 경계(domain이 상위 계층·Spring에 의존하지 않음, application이 어댑터에 의존하지 않음, kernel이 board-service에 의존하지 않음)는 ArchUnit 테스트로 검증합니다.
 
 `main` 브랜치 push와 PR, 수동 실행에서 GitHub Actions로 포맷 검사(lint job)를 수행하고, 통과 후 빌드·테스트(build job)를 수행합니다.
@@ -59,11 +60,11 @@ minor·patch 업데이트는 묶고, major 업데이트는 개별 PR로 생성�
 
 | 방법 | 설명 | 문서 |
 |---|---|---|
-| Docker Compose | 앱과 PostgreSQL을 함께 실행. 소스 빌드 또는 기존 이미지 사용 | [Compose 실행](docs/deployment/compose.md) |
-| Docker CLI | 앱 이미지와 PostgreSQL 컨테이너를 직접 실행·관리 | [컨테이너 실행 예시](docs/deployment/local-runtime.md) |
-| JVM | 준비된 PostgreSQL에 연결하여 Gradle `bootRun`으로 실행 | [JVM 실행](docs/deployment/jvm-runtime.md) |
+| Docker Compose | 앱과 PostgreSQL을 함께 실행. 소스 빌드 또는 기존 이미지 사용 | [Compose 실행](docs/devops/deployment/compose.md) |
+| Docker CLI | 앱 이미지와 PostgreSQL 컨테이너를 직접 실행·관리 | [컨테이너 실행 예시](docs/devops/deployment/local-runtime.md) |
+| JVM | 준비된 PostgreSQL에 연결하여 Gradle `bootRun`으로 실행 | [JVM 실행](docs/devops/deployment/jvm-runtime.md) |
 
-이미지 구성·빌드와 실행 설정은 [배포와 실행 문서](docs/deployment/README.md)에서 안내합니다.
+이미지 구성·빌드와 실행 설정은 [배포와 실행 문서](docs/devops/deployment/README.md)에서 안내합니다.
 
 ## 게시판 API
 
@@ -90,12 +91,12 @@ launcher HTTP 통합 테스트는 H2에서 API → 유스케이스 → JPA 저�
 컨테이너 이미지 빌드와 Compose 실행 구성이 있으며, 이미지 기동·API·재기동 데이터 유지를 로컬에서 검증했습니다.
 현재 CI는 Gradle 빌드·테스트를 수행하며, 컨테이너 이미지 빌드·게시·Compose 실행은 자동화되어 있지 않습니다. 원격 배포와 운영 관찰성·백업·복구는 후속 작업입니다.
 
-[docs/devops-checklist.md](docs/devops-checklist.md)에서 완료 항목, 작업별 성공 조건, 결정 필요 사항과 검증 메모를 관리합니다.
+[DevOps 문서 안내](docs/devops/README.md)에서 전체 문서 구조를 확인할 수 있습니다. [체크리스트](docs/devops/checklist.md)는 항목별 상태·완료 기준·결정 필요 사항을, 항목별 상세 문서는 설정·검증 근거와 실행 이력을 관리합니다.
 
 - P0: 품질·보안 기준과 운영 DB 선행 검증
 - P1: 이미지와 실행·인증 환경 준비
 - P2: 첫 운영 배포 전 배포·복구·관찰성 구성
 - P3: 협업 편의와 확장 최적화
 
-DevOps 변경 시 체크리스트 상태를 함께 갱신하고, 완료 항목에는 커밋 해시와 검증 근거를 기록합니다.
+DevOps 변경 시 체크리스트 상태를 함께 갱신하고, 항목별 상세 문서에는 커밋 해시와 검증 근거를 기록합니다.
 GitHub 설정은 적용 대상·확인 일자와 실제 강제 동작을 확인하며, 배포 대상·레지스트리·시크릿 관리 방식은 이미지 게시·배포 인증 등 해당 결정에 의존하는 구성 전에 확정합니다.

@@ -1,10 +1,12 @@
 package com.lilamaris.lilboard.board.web;
 
 import com.lilamaris.lilboard.board.application.port.in.CreateBoardUseCase;
+import com.lilamaris.lilboard.board.application.port.in.DeleteBoardUseCase;
 import com.lilamaris.lilboard.board.application.port.in.FindBoardUseCase;
 import com.lilamaris.lilboard.board.application.port.in.FindBoardsUseCase;
 import com.lilamaris.lilboard.board.application.port.in.UpdateBoardUseCase;
 import com.lilamaris.lilboard.board.application.port.in.command.CreateBoardCommand;
+import com.lilamaris.lilboard.board.application.port.in.command.DeleteBoardCommand;
 import com.lilamaris.lilboard.board.application.port.in.command.UpdateBoardCommand;
 import com.lilamaris.lilboard.board.application.port.in.query.FindBoardQuery;
 import com.lilamaris.lilboard.board.application.port.in.query.FindBoardsQuery;
@@ -22,6 +24,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,16 +42,19 @@ import org.springframework.web.server.ResponseStatusException;
 public class BoardController {
     private final CreateBoardUseCase createBoardUseCase;
     private final UpdateBoardUseCase updateBoardUseCase;
+    private final DeleteBoardUseCase deleteBoardUseCase;
     private final FindBoardUseCase findBoardUseCase;
     private final FindBoardsUseCase findBoardsUseCase;
 
     public BoardController(
             CreateBoardUseCase createBoardUseCase,
             UpdateBoardUseCase updateBoardUseCase,
+            DeleteBoardUseCase deleteBoardUseCase,
             FindBoardUseCase findBoardUseCase,
             FindBoardsUseCase findBoardsUseCase) {
         this.createBoardUseCase = createBoardUseCase;
         this.updateBoardUseCase = updateBoardUseCase;
+        this.deleteBoardUseCase = deleteBoardUseCase;
         this.findBoardUseCase = findBoardUseCase;
         this.findBoardsUseCase = findBoardsUseCase;
     }
@@ -111,11 +117,34 @@ public class BoardController {
             responseCode = "400",
             description = "잘못된 게시판 ID, 필수 값 누락, 공백, 최대 길이 초과 또는 잘못된 JSON 요청",
             content = @Content)
+    @ApiResponse(responseCode = "404", description = "조회 가능한 게시판이 존재하지 않음", content = @Content)
     @PutMapping("/{boardId}")
     public UpdateBoardResult update(
             @PathVariable("boardId") UUID boardId, @Valid @RequestBody UpdateBoardRequest request) {
-        return updateBoardUseCase.update(
-                new UpdateBoardCommand(boardId, request.name(), request.description()));
+        try {
+            return updateBoardUseCase.update(
+                    new UpdateBoardCommand(boardId, request.name(), request.description()));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, exception.getMessage(), exception);
+        }
+    }
+
+    @Operation(
+            summary = "게시판 삭제",
+            description = "게시판을 soft delete로 삭제합니다. 삭제 시각을 기록하고 이후 조회에서 제외합니다.")
+    @ApiResponse(responseCode = "204", description = "게시판 삭제 성공")
+    @ApiResponse(responseCode = "400", description = "잘못된 게시판 ID", content = @Content)
+    @ApiResponse(responseCode = "404", description = "조회 가능한 게시판이 존재하지 않음", content = @Content)
+    @DeleteMapping("/{boardId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable("boardId") UUID boardId) {
+        try {
+            deleteBoardUseCase.delete(new DeleteBoardCommand(boardId));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, exception.getMessage(), exception);
+        }
     }
 
     @Operation(summary = "게시판 단건 조회", description = "게시판 ID로 게시판을 조회합니다.")

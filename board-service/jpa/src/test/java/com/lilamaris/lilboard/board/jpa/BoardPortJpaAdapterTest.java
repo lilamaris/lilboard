@@ -14,6 +14,9 @@ import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -35,6 +38,7 @@ import org.springframework.test.context.ContextConfiguration;
 class BoardPortJpaAdapterTest {
     private static final UUID ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final Instant CREATED_AT = Instant.parse("2026-01-01T00:00:00Z");
+    private static final Instant DELETED_AT = Instant.parse("2026-01-02T00:00:00Z");
 
     @Autowired private BoardSavePort savePort;
 
@@ -112,6 +116,117 @@ class BoardPortJpaAdapterTest {
     @DisplayName("존재하지 않는 id로 조회하면 Optional.empty를 반환한다")
     void returnsEmptyWhenBoardNotFoundById() {
         assertThat(findPort.findById(UUID.randomUUID())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("포트로 게시판을 삭제하면 포트 조회에서 제외되지만 행과 삭제 시각은 유지한다")
+    void excludesDeletedBoardFromPortFindByIdAndKeepsRow() {
+        Board board = Board.of(ID, "자유게시판", "설명", CREATED_AT);
+        Board remaining =
+                Board.of(
+                        UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                        "남은 게시판",
+                        "설명",
+                        CREATED_AT);
+        savePort.save(board);
+        savePort.save(remaining);
+        entityManager.flush();
+
+        board.delete(DELETED_AT);
+        savePort.save(board);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(findPort.findById(ID)).isEmpty();
+        assertThat(findPort.findById(remaining.getId()))
+                .hasValueSatisfying(
+                        persisted ->
+                                assertThat(persisted)
+                                        .usingRecursiveComparison()
+                                        .isEqualTo(remaining));
+        assertThat(repository.findById(ID))
+                .hasValueSatisfying(
+                        persisted -> assertThat(persisted.getDeletedAt()).isEqualTo(DELETED_AT));
+    }
+
+    @Test
+    @DisplayName("목록 조회는 삭제된 게시판을 제외하고 삭제되지 않은 게시판만 전체 개수에 포함한다")
+    void excludesDeletedBoardFromListAndTotalElements() {
+        Board deleted = Board.of(ID, "삭제 대상", "설명", CREATED_AT);
+        Board remaining =
+                Board.of(
+                        UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                        "남은 게시판",
+                        "설명",
+                        CREATED_AT.plusSeconds(1));
+        savePort.save(deleted);
+        savePort.save(remaining);
+        entityManager.flush();
+
+        deleted.delete(DELETED_AT);
+        savePort.save(deleted);
+        entityManager.flush();
+        entityManager.clear();
+
+        var page = listPort.findAll(OffsetPageRequest.of(0, 2));
+
+        assertThat(page.items()).extracting(Board::getName).containsExactly("남은 게시판");
+        assertThat(page.totalElements()).isEqualTo(1);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0,최신,true", "1,동시 생성,true", "2,이전,false"})
+    @DisplayName("삭제된 행이 정렬 순서 사이에 있어도 페이지 오프셋과 전체 개수는 남은 게시판만 기준으로 계산한다")
+    void paginatesOnlyRemainingBoards(int pageNumber, String expectedName, boolean hasNext) {
+        savePageFixtures();
+        Board newestDeleted =
+                Board.of(
+                        UUID.fromString("00000000-0000-0000-0000-000000000004"),
+                        "삭제된 최신 게시판",
+                        "설명",
+                        CREATED_AT.plusSeconds(2));
+        Board middleDeleted =
+                Board.of(
+                        UUID.fromString("00000000-0000-0000-0000-000000000005"),
+                        "삭제된 중간 게시판",
+                        "설명",
+                        CREATED_AT);
+        newestDeleted.delete(DELETED_AT);
+        middleDeleted.delete(DELETED_AT);
+        savePort.save(newestDeleted);
+        savePort.save(middleDeleted);
+        entityManager.flush();
+        entityManager.clear();
+
+        var page = listPort.findAll(OffsetPageRequest.of(pageNumber, 1));
+
+        assertThat(page.items()).extracting(Board::getName).containsExactly(expectedName);
+        assertThat(page.page()).isEqualTo(pageNumber);
+        assertThat(page.size()).isEqualTo(1);
+        assertThat(page.totalElements()).isEqualTo(3);
+        assertThat(page.totalPages()).isEqualTo(3);
+        assertThat(page.hasNext()).isEqualTo(hasNext);
+        assertThat(page.hasPrevious()).isEqualTo(pageNumber > 0);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    @DisplayName("모든 게시판이 삭제되면 첫 페이지와 범위 밖 페이지 모두 빈 목록과 전체 개수 0을 반환한다")
+    void returnsEmptyPageWhenAllBoardsAreDeleted(int pageNumber) {
+        Board deleted = Board.of(ID, "삭제된 게시판", "설명", CREATED_AT);
+        deleted.delete(DELETED_AT);
+        savePort.save(deleted);
+        entityManager.flush();
+        entityManager.clear();
+
+        var page = listPort.findAll(OffsetPageRequest.of(pageNumber, 1));
+
+        assertThat(page.items()).isEmpty();
+        assertThat(page.page()).isEqualTo(pageNumber);
+        assertThat(page.totalElements()).isZero();
+        assertThat(page.totalPages()).isZero();
+        assertThat(page.hasNext()).isFalse();
+        assertThat(repository.count()).isEqualTo(1);
     }
 
     @Test

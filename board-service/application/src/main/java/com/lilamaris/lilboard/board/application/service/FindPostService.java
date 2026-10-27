@@ -20,7 +20,7 @@ public class FindPostService implements FindPostUseCase {
     public FindPostResult find(FindPostQuery query) {
         var post =
                 postFindPort
-                        .findById(query.postId())
+                        .findVisibleById(query.postId())
                         .orElseThrow(() -> new IllegalArgumentException("Post를 찾을 수 없습니다."));
         return FindPostResult.from(post);
     }

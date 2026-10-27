@@ -3,6 +3,7 @@ package com.lilamaris.lilboard.board.application.service;
 import com.lilamaris.lilboard.board.application.port.in.CreatePostUseCase;
 import com.lilamaris.lilboard.board.application.port.in.command.CreatePostCommand;
 import com.lilamaris.lilboard.board.application.port.in.result.CreatePostResult;
+import com.lilamaris.lilboard.board.application.port.out.BoardFindPort;
 import com.lilamaris.lilboard.board.application.port.out.PostSavePort;
 import com.lilamaris.lilboard.board.application.port.out.UuidGenerator;
 import com.lilamaris.lilboard.board.domain.Post;
@@ -18,6 +19,7 @@ import org.springframework.validation.annotation.Validated;
 @Service
 @RequiredArgsConstructor
 public class CreatePostService implements CreatePostUseCase {
+    private final BoardFindPort boardFindPort;
     private final PostSavePort postSavePort;
     private final UuidGenerator uuidGenerator;
     private final Clock clock;
@@ -25,6 +27,10 @@ public class CreatePostService implements CreatePostUseCase {
     @Override
     @Transactional
     public CreatePostResult create(CreatePostCommand command) {
+        boardFindPort
+                .findById(command.boardId())
+                .orElseThrow(() -> new IllegalArgumentException("Board를 찾을 수 없습니다."));
+
         UUID id = uuidGenerator.generate();
         Instant createdAt = clock.instant();
 

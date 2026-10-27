@@ -120,7 +120,7 @@ class UpdatePostUseCaseValidationTest {
 
     private void stubExistingPost() {
         Post post = Post.of(POST_ID, BOARD_ID, "기존 제목", "기존 본문", CREATED_AT);
-        when(findPort.findById(POST_ID)).thenReturn(Optional.of(post));
+        when(findPort.findVisibleById(POST_ID)).thenReturn(Optional.of(post));
         when(savePort.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 

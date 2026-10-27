@@ -26,6 +26,7 @@ class BoardTest {
     void createsBoardWithGivenValues() {
         Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
 
+        assertThat(board.isDeleted()).isFalse();
         assertThat(board.getId()).isEqualTo(ID);
         assertThat(board.getName()).isEqualTo("게시판");
         assertThat(board.getDescription()).isEqualTo("설명");
@@ -357,6 +358,7 @@ class BoardTest {
         board.delete(deletedAt);
 
         assertThat(board.getDeletedAt()).isEqualTo(deletedAt);
+        assertThat(board.isDeleted()).isTrue();
         assertThat(board.getName()).isEqualTo("기존 값");
         assertThat(board.getUpdatedAt()).isEqualTo(CREATED_AT.plusSeconds(1));
         assertThat(board.getDescription()).isEqualTo("설명");

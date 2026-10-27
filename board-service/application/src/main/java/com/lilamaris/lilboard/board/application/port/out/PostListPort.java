@@ -5,5 +5,5 @@ import com.lilamaris.lilboard.kernel.pagination.OffsetPage;
 import com.lilamaris.lilboard.kernel.pagination.OffsetPageRequest;
 
 public interface PostListPort {
-    OffsetPage<Post> findAll(OffsetPageRequest pageRequest);
+    OffsetPage<Post> findAllVisible(OffsetPageRequest pageRequest);
 }

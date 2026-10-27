@@ -72,6 +72,10 @@ public class Board {
         this.description = validatedDescription;
     }
 
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
     public void delete(Instant deletedAt) {
         if (deletedAt == null) {
             throw new NullPointerException("deletedAt must not be null.");

@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,7 +35,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @Tag(name = "게시판", description = "게시판 관리 API")
 @RestController
@@ -96,7 +96,10 @@ public class BoardController {
     @ApiResponse(
             responseCode = "400",
             description = "필수 값 누락, 공백, 최대 길이 초과 또는 잘못된 JSON 요청",
-            content = @Content)
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreateBoardResult create(@Valid @RequestBody CreateBoardCommand command) {
@@ -116,35 +119,46 @@ public class BoardController {
     @ApiResponse(
             responseCode = "400",
             description = "잘못된 게시판 ID, 필수 값 누락, 공백, 최대 길이 초과 또는 잘못된 JSON 요청",
-            content = @Content)
-    @ApiResponse(responseCode = "404", description = "조회 가능한 게시판이 존재하지 않음", content = @Content)
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(
+            responseCode = "404",
+            description = "조회 가능한 게시판이 존재하지 않음",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
     @PutMapping("/{boardId}")
     public UpdateBoardResult update(
             @PathVariable("boardId") UUID boardId, @Valid @RequestBody UpdateBoardRequest request) {
-        try {
-            return updateBoardUseCase.update(
-                    new UpdateBoardCommand(boardId, request.name(), request.description()));
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, exception.getMessage(), exception);
-        }
+        return updateBoardUseCase.update(
+                new UpdateBoardCommand(boardId, request.name(), request.description()));
     }
 
     @Operation(
             summary = "게시판 삭제",
             description = "게시판을 soft delete로 삭제합니다. 삭제 시각을 기록하고 이후 조회에서 제외합니다.")
     @ApiResponse(responseCode = "204", description = "게시판 삭제 성공")
-    @ApiResponse(responseCode = "400", description = "잘못된 게시판 ID", content = @Content)
-    @ApiResponse(responseCode = "404", description = "조회 가능한 게시판이 존재하지 않음", content = @Content)
+    @ApiResponse(
+            responseCode = "400",
+            description = "잘못된 게시판 ID",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(
+            responseCode = "404",
+            description = "조회 가능한 게시판이 존재하지 않음",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
     @DeleteMapping("/{boardId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable("boardId") UUID boardId) {
-        try {
-            deleteBoardUseCase.delete(new DeleteBoardCommand(boardId));
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, exception.getMessage(), exception);
-        }
+        deleteBoardUseCase.delete(new DeleteBoardCommand(boardId));
     }
 
     @Operation(summary = "게시판 단건 조회", description = "게시판 ID로 게시판을 조회합니다.")
@@ -155,16 +169,23 @@ public class BoardController {
                     @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = FindBoardResult.class)))
-    @ApiResponse(responseCode = "400", description = "잘못된 게시판 ID", content = @Content)
-    @ApiResponse(responseCode = "404", description = "게시판이 존재하지 않음", content = @Content)
+    @ApiResponse(
+            responseCode = "400",
+            description = "잘못된 게시판 ID",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(
+            responseCode = "404",
+            description = "게시판이 존재하지 않음",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
     @GetMapping("/{boardId}")
     public FindBoardResult find(@PathVariable("boardId") UUID boardId) {
-        try {
-            return findBoardUseCase.find(new FindBoardQuery(boardId));
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, exception.getMessage(), exception);
-        }
+        return findBoardUseCase.find(new FindBoardQuery(boardId));
     }
 
     @Operation(
@@ -175,17 +196,14 @@ public class BoardController {
     @ApiResponse(
             responseCode = "400",
             description = "잘못된 페이지 번호·크기 또는 offset 범위 초과",
-            content = @Content)
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
     @GetMapping
     public OffsetPage<FindBoardResult> findAll(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
-        OffsetPageRequest pageRequest;
-        try {
-            pageRequest = OffsetPageRequest.of(page, size);
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 페이지 요청입니다.", exception);
-        }
-        return findBoardsUseCase.find(new FindBoardsQuery(pageRequest));
+        return findBoardsUseCase.find(new FindBoardsQuery(OffsetPageRequest.of(page, size)));
     }
 }

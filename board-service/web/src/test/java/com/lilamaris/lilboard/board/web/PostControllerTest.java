@@ -50,6 +50,7 @@ class PostControllerTest {
                 MockMvcBuilders.standaloneSetup(
                                 new PostController(
                                         useCase, updateUseCase, findUseCase, listUseCase))
+                        .setControllerAdvice(new GlobalExceptionHandler())
                         .build();
     }
 
@@ -114,7 +115,8 @@ class PostControllerTest {
     @DisplayName("필수 값 누락·공백·길이 초과 또는 잘못된 JSON이면 400을 반환하고 생성하지 않는다")
     void rejectsInvalidBody(String body) throws Exception {
         mvc.perform(post("/api/posts").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("잘못된 요청"));
         verifyNoInteractions(useCase);
     }
 
@@ -248,7 +250,10 @@ class PostControllerTest {
         when(findUseCase.find(new FindPostQuery(id)))
                 .thenThrow(new IllegalArgumentException("Post를 찾을 수 없습니다."));
 
-        mvc.perform(get("/api/posts/{postId}", id)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/posts/{postId}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("요청한 대상을 찾을 수 없습니다"))
+                .andExpect(jsonPath("$.detail").value("Post를 찾을 수 없습니다."));
     }
 
     @Test

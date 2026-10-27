@@ -57,6 +57,7 @@ class BoardControllerTest {
                                         deleteUseCase,
                                         findBoardUseCase,
                                         findBoardsUseCase))
+                        .setControllerAdvice(new GlobalExceptionHandler())
                         .build();
     }
 
@@ -109,7 +110,21 @@ class BoardControllerTest {
     @DisplayName("필수 값 누락·공백·길이 초과 또는 잘못된 JSON이면 400을 반환하고 생성하지 않는다")
     void rejectsInvalidBody(String body) throws Exception {
         mvc.perform(post("/api/boards").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("잘못된 요청"));
+        verifyNoInteractions(useCase);
+    }
+
+    @Test
+    @DisplayName("이름이 공백이면 400과 errors에 위반 필드를 담고 생성하지 않는다")
+    void exposesFieldErrorForBlankName() throws Exception {
+        mvc.perform(
+                        post("/api/boards")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"name\":\" \",\"description\":\"설명\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("요청값이 유효하지 않습니다."))
+                .andExpect(jsonPath("$.errors[0].field").value("name"));
         verifyNoInteractions(useCase);
     }
 
@@ -253,7 +268,10 @@ class BoardControllerTest {
         when(findBoardUseCase.find(new FindBoardQuery(id)))
                 .thenThrow(new IllegalArgumentException("Board를 찾을 수 없습니다."));
 
-        mvc.perform(get("/api/boards/{boardId}", id)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/boards/{boardId}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("요청한 대상을 찾을 수 없습니다"))
+                .andExpect(jsonPath("$.detail").value("Board를 찾을 수 없습니다."));
     }
 
     @Test

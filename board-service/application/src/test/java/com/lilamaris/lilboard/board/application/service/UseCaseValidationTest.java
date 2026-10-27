@@ -52,6 +52,8 @@ class UseCaseValidationTest {
                 () -> new CreateBoardService(savePort, uuidGenerator, clock));
         context.registerBean(
                 UpdateBoardService.class, () -> new UpdateBoardService(savePort, findPort, clock));
+        context.registerBean(
+                DeleteBoardService.class, () -> new DeleteBoardService(savePort, findPort, clock));
         context.registerBean(FindBoardService.class, () -> new FindBoardService(findPort));
         context.registerBean(FindBoardsService.class, () -> new FindBoardsService(listPort));
         context.refresh();
@@ -129,6 +131,37 @@ class UseCaseValidationTest {
         assertThatThrownBy(() -> invoke(useCase, null, "게시판", "설명", false))
                 .isInstanceOf(ConstraintViolationException.class);
         verifyNoInteractions(findPort, savePort, uuidGenerator);
+    }
+
+    @Test
+    @DisplayName("삭제 명령이 null이면 검증 예외를 던지고 외부 의존성을 호출하지 않는다")
+    void rejectsNullDeleteCommand() {
+        assertThatThrownBy(() -> context.getBean(DeleteBoardUseCase.class).delete(null))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(findPort, savePort, uuidGenerator);
+    }
+
+    @Test
+    @DisplayName("삭제 명령의 게시판 ID가 null이면 검증 예외를 던지고 외부 의존성을 호출하지 않는다")
+    void rejectsNullBoardIdForDeleteCommand() {
+        assertThatThrownBy(
+                        () ->
+                                context.getBean(DeleteBoardUseCase.class)
+                                        .delete(new DeleteBoardCommand(null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(findPort, savePort, uuidGenerator);
+    }
+
+    @Test
+    @DisplayName("유효한 삭제 명령이면 검증을 통과하고 게시판을 삭제한다")
+    void acceptsValidDeleteCommand() {
+        Board board = Board.of(ID, "게시판", "설명", NOW);
+        when(findPort.findById(ID)).thenReturn(Optional.of(board));
+        when(savePort.save(any(Board.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        context.getBean(DeleteBoardUseCase.class).delete(new DeleteBoardCommand(ID));
+
+        assertThat(board.getDeletedAt()).isEqualTo(NOW);
     }
 
     @ParameterizedTest

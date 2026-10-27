@@ -15,6 +15,9 @@ import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -35,6 +38,7 @@ class PostPortJpaAdapterTest {
     private static final UUID POST_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final UUID BOARD_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
     private static final Instant CREATED_AT = Instant.parse("2026-01-01T00:00:00Z");
+    private static final Instant DELETED_AT = Instant.parse("2026-01-02T00:00:00Z");
 
     @Autowired private PostSavePort savePort;
 
@@ -49,30 +53,62 @@ class PostPortJpaAdapterTest {
     @Autowired private EntityManager entityManager;
 
     @Test
-    @DisplayName("저장한 게시글을 ID로 조회하면 저장한 모든 필드를 반환한다")
-    void findsSavedPostById() {
-        Post post = savePost();
+    @DisplayName("가시 게시글을 ID로 조회하면 저장한 게시글 값을 그대로 반환한다")
+    void findsVisibleSavedPostById() {
+        Post post = savePost(saveBoard());
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(findPort.findById(POST_ID))
+        assertThat(findPort.findVisibleById(POST_ID))
                 .hasValueSatisfying(
                         found -> assertThat(found).usingRecursiveComparison().isEqualTo(post));
     }
 
     @Test
-    @DisplayName("존재하지 않는 게시글 ID로 조회하면 빈 결과를 반환한다")
+    @DisplayName("소속 게시판이 삭제된 게시글은 가시 조회에서 제외되고 게시글·게시판 행과 삭제 시각은 유지한다")
+    void excludesPostOfDeletedBoardFromVisibleFindAndKeepsRows() {
+        Board board = saveBoard();
+        Post post = savePost(board);
+        entityManager.flush();
+
+        board.delete(DELETED_AT);
+        boardRepository.save(board);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(findPort.findVisibleById(POST_ID)).isEmpty();
+        assertThat(repository.findById(POST_ID))
+                .hasValueSatisfying(
+                        persisted ->
+                                assertThat(persisted).usingRecursiveComparison().isEqualTo(post));
+        assertThat(boardRepository.findById(BOARD_ID))
+                .hasValueSatisfying(
+                        persisted -> assertThat(persisted.getDeletedAt()).isEqualTo(DELETED_AT));
+    }
+
+    @Test
+    @DisplayName("소속 게시판 행이 없으면 가시 게시글로 조회하지 못해 빈 결과를 반환한다")
+    void returnsEmptyWhenOwningBoardRowIsMissing() {
+        savePort.save(Post.of(POST_ID, BOARD_ID, "기존 제목", "기존 본문", CREATED_AT));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(findPort.findVisibleById(POST_ID)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 게시글 ID로 가시 조회하면 빈 결과를 반환한다")
     void returnsEmptyWhenPostNotFound() {
-        assertThat(findPort.findById(POST_ID)).isEmpty();
+        assertThat(findPort.findVisibleById(POST_ID)).isEmpty();
     }
 
     @Test
     @DisplayName("조회한 게시글을 수정해 저장하면 기존 행의 제목·본문·수정 시각을 갱신한다")
     void persistsUpdatedPostWithoutAddingRow() {
-        savePost();
+        savePost(saveBoard());
         entityManager.flush();
         entityManager.clear();
-        Post post = findPort.findById(POST_ID).orElseThrow();
+        Post post = findPort.findVisibleById(POST_ID).orElseThrow();
         Instant updatedAt = CREATED_AT.plusSeconds(1);
 
         post.updateTitle("새 제목", updatedAt);
@@ -82,16 +118,104 @@ class PostPortJpaAdapterTest {
         entityManager.clear();
 
         assertThat(repository.count()).isEqualTo(1);
-        assertThat(findPort.findById(POST_ID))
+        assertThat(findPort.findVisibleById(POST_ID))
                 .hasValueSatisfying(
-                        found -> {
-                            assertThat(found.getId()).isEqualTo(POST_ID);
-                            assertThat(found.getBoardId()).isEqualTo(BOARD_ID);
-                            assertThat(found.getTitle()).isEqualTo("새 제목");
-                            assertThat(found.getContent()).isEqualTo("첫 번째 줄\n두 번째 줄");
-                            assertThat(found.getCreatedAt()).isEqualTo(CREATED_AT);
-                            assertThat(found.getUpdatedAt()).isEqualTo(updatedAt);
+                        reread -> {
+                            assertThat(reread.getId()).isEqualTo(POST_ID);
+                            assertThat(reread.getBoardId()).isEqualTo(BOARD_ID);
+                            assertThat(reread.getTitle()).isEqualTo("새 제목");
+                            assertThat(reread.getContent()).isEqualTo("첫 번째 줄\n두 번째 줄");
+                            assertThat(reread.getCreatedAt()).isEqualTo(CREATED_AT);
+                            assertThat(reread.getUpdatedAt()).isEqualTo(updatedAt);
                         });
+    }
+
+    @Test
+    @DisplayName("목록 조회는 삭제된 게시판의 게시글을 제외하고 전체 개수에 포함하지 않는다")
+    void excludesPostOfDeletedBoardFromListAndTotalElements() {
+        UUID deletedBoardId = UUID.fromString("00000000-0000-0000-0000-000000000003");
+        UUID deletedPostId = UUID.fromString("00000000-0000-0000-0000-000000000004");
+        Board deletedBoard = Board.of(deletedBoardId, "삭제 대상 게시판", "설명", CREATED_AT);
+        deletedBoard.delete(DELETED_AT);
+        boardRepository.save(deletedBoard);
+        boardRepository.save(Board.of(BOARD_ID, "남은 게시판", "설명", CREATED_AT));
+        savePort.save(Post.of(deletedPostId, deletedBoardId, "삭제된 게시글", "본문", CREATED_AT));
+        savePort.save(Post.of(POST_ID, BOARD_ID, "남은 게시글", "본문", CREATED_AT));
+        entityManager.flush();
+        entityManager.clear();
+
+        var page = listPort.findAllVisible(OffsetPageRequest.of(0, 2));
+
+        assertThat(page.items()).extracting(Post::getTitle).containsExactly("남은 게시글");
+        assertThat(page.totalElements()).isEqualTo(1);
+        assertThat(repository.count()).isEqualTo(2);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0,최신,true", "1,이전,false"})
+    @DisplayName("삭제된 게시판의 게시글이 정렬 순서 사이에 있어도 페이지 오프셋과 전체 개수는 남은 게시글만 기준으로 계산한다")
+    void paginatesOnlyVisiblePosts(int pageNumber, String expectedTitle, boolean hasNext) {
+        saveVisibleFixtures();
+        UUID deletedBoardId = UUID.fromString("00000000-0000-0000-0000-000000000003");
+        UUID deletedPostId = UUID.fromString("00000000-0000-0000-0000-000000000004");
+        Board deletedBoard = Board.of(deletedBoardId, "삭제 대상 게시판", "설명", CREATED_AT);
+        deletedBoard.delete(DELETED_AT);
+        boardRepository.save(deletedBoard);
+        savePort.save(
+                Post.of(
+                        deletedPostId,
+                        deletedBoardId,
+                        "삭제된 중간 게시글",
+                        "본문",
+                        CREATED_AT.plusSeconds(1)));
+        entityManager.flush();
+        entityManager.clear();
+
+        var page = listPort.findAllVisible(OffsetPageRequest.of(pageNumber, 1));
+
+        assertThat(page.items()).extracting(Post::getTitle).containsExactly(expectedTitle);
+        assertThat(page.page()).isEqualTo(pageNumber);
+        assertThat(page.size()).isEqualTo(1);
+        assertThat(page.totalElements()).isEqualTo(2);
+        assertThat(page.totalPages()).isEqualTo(2);
+        assertThat(page.hasNext()).isEqualTo(hasNext);
+        assertThat(page.hasPrevious()).isEqualTo(pageNumber > 0);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    @DisplayName("모든 게시판이 삭제되면 첫 페이지와 범위 밖 페이지 모두 빈 목록과 전체 개수 0을 반환한다")
+    void returnsEmptyPageWhenAllBoardsAreDeleted(int pageNumber) {
+        Board deletedBoard = Board.of(BOARD_ID, "삭제된 게시판", "설명", CREATED_AT);
+        deletedBoard.delete(DELETED_AT);
+        boardRepository.save(deletedBoard);
+        savePort.save(Post.of(POST_ID, BOARD_ID, "게시글", "본문", CREATED_AT));
+        entityManager.flush();
+        entityManager.clear();
+
+        var page = listPort.findAllVisible(OffsetPageRequest.of(pageNumber, 1));
+
+        assertThat(page.items()).isEmpty();
+        assertThat(page.page()).isEqualTo(pageNumber);
+        assertThat(page.size()).isEqualTo(1);
+        assertThat(page.totalElements()).isZero();
+        assertThat(page.totalPages()).isZero();
+        assertThat(page.hasNext()).isFalse();
+        assertThat(repository.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("소속 게시판 행이 없는 게시글은 목록과 전체 개수에서 제외한다")
+    void excludesPostWithoutBoardRowFromList() {
+        savePort.save(Post.of(POST_ID, BOARD_ID, "고아 게시글", "본문", CREATED_AT));
+        entityManager.flush();
+        entityManager.clear();
+
+        var page = listPort.findAllVisible(OffsetPageRequest.of(0, 2));
+
+        assertThat(page.items()).isEmpty();
+        assertThat(page.totalElements()).isZero();
+        assertThat(repository.count()).isEqualTo(1);
     }
 
     @Test
@@ -99,7 +223,7 @@ class PostPortJpaAdapterTest {
     void findsFirstPageInStableOrder() {
         savePageFixtures();
 
-        var page = listPort.findAll(OffsetPageRequest.of(0, 2));
+        var page = listPort.findAllVisible(OffsetPageRequest.of(0, 2));
 
         assertThat(page.items()).extracting(Post::getTitle).containsExactly("동시 생성", "최신");
         assertThat(page.page()).isZero();
@@ -115,7 +239,7 @@ class PostPortJpaAdapterTest {
     void findsLastPage() {
         savePageFixtures();
 
-        var page = listPort.findAll(OffsetPageRequest.of(1, 2));
+        var page = listPort.findAllVisible(OffsetPageRequest.of(1, 2));
 
         assertThat(page.items()).extracting(Post::getTitle).containsExactly("이전");
         assertThat(page.page()).isEqualTo(1);
@@ -128,7 +252,7 @@ class PostPortJpaAdapterTest {
     @Test
     @DisplayName("게시글이 없으면 빈 목록과 전체 개수 0을 반환한다")
     void findsEmptyPage() {
-        var page = listPort.findAll(OffsetPageRequest.of(0, 2));
+        var page = listPort.findAllVisible(OffsetPageRequest.of(0, 2));
 
         assertThat(page.items()).isEmpty();
         assertThat(page.page()).isZero();
@@ -144,7 +268,7 @@ class PostPortJpaAdapterTest {
     void findsPageBeyondLast() {
         savePageFixtures();
 
-        var page = listPort.findAll(OffsetPageRequest.of(2, 2));
+        var page = listPort.findAllVisible(OffsetPageRequest.of(2, 2));
 
         assertThat(page.items()).isEmpty();
         assertThat(page.page()).isEqualTo(2);
@@ -152,6 +276,20 @@ class PostPortJpaAdapterTest {
         assertThat(page.totalElements()).isEqualTo(3);
         assertThat(page.hasPrevious()).isTrue();
         assertThat(page.hasNext()).isFalse();
+    }
+
+    private void saveVisibleFixtures() {
+        boardRepository.save(Board.of(BOARD_ID, "남은 게시판", "설명", CREATED_AT));
+        savePort.save(
+                Post.of(
+                        UUID.fromString("00000000-0000-0000-0000-000000000005"),
+                        BOARD_ID,
+                        "최신",
+                        "본문",
+                        CREATED_AT.plusSeconds(2)));
+        savePort.save(Post.of(POST_ID, BOARD_ID, "이전", "본문", CREATED_AT));
+        entityManager.flush();
+        entityManager.clear();
     }
 
     private void savePageFixtures() {
@@ -175,11 +313,13 @@ class PostPortJpaAdapterTest {
         entityManager.clear();
     }
 
-    private Post savePost() {
-        boardRepository.save(Board.of(BOARD_ID, "게시판", "설명", CREATED_AT));
-        Post post = Post.of(POST_ID, BOARD_ID, "기존 제목", "기존 본문", CREATED_AT);
-        savePort.save(post);
-        return post;
+    private Board saveBoard() {
+        return boardRepository.save(Board.of(BOARD_ID, "게시판", "설명", CREATED_AT));
+    }
+
+    private Post savePost(Board board) {
+        Post post = Post.of(POST_ID, board.getId(), "기존 제목", "기존 본문", CREATED_AT);
+        return savePort.save(post);
     }
 
     @SpringBootConfiguration

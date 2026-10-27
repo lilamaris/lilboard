@@ -50,6 +50,7 @@ class PostControllerTest {
                 MockMvcBuilders.standaloneSetup(
                                 new PostController(
                                         useCase, updateUseCase, findUseCase, listUseCase))
+                        .setControllerAdvice(new GlobalExceptionHandler())
                         .build();
     }
 
@@ -114,7 +115,8 @@ class PostControllerTest {
     @DisplayName("필수 값 누락·공백·길이 초과 또는 잘못된 JSON이면 400을 반환하고 생성하지 않는다")
     void rejectsInvalidBody(String body) throws Exception {
         mvc.perform(post("/api/posts").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("잘못된 요청"));
         verifyNoInteractions(useCase);
     }
 
@@ -248,7 +250,41 @@ class PostControllerTest {
         when(findUseCase.find(new FindPostQuery(id)))
                 .thenThrow(new IllegalArgumentException("Post를 찾을 수 없습니다."));
 
-        mvc.perform(get("/api/posts/{postId}", id)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/posts/{postId}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("요청한 대상을 찾을 수 없습니다"))
+                .andExpect(jsonPath("$.detail").value("Post를 찾을 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("조회 가능한 게시판이 없으면 생성 요청에 404를 반환한다")
+    void returnsNotFoundWhenBoardIsNotVisibleForCreate() throws Exception {
+        UUID boardId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        when(useCase.create(new CreatePostCommand(boardId, "게시글 제목", "본문")))
+                .thenThrow(new IllegalArgumentException("Board를 찾을 수 없습니다."));
+
+        mvc.perform(
+                        post("/api/posts")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"boardId\":\""
+                                                + boardId
+                                                + "\",\"title\":\"게시글 제목\",\"content\":\"본문\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("조회 가능한 게시글이 없으면 수정 요청에 404를 반환한다")
+    void returnsNotFoundWhenPostIsNotVisibleForUpdate() throws Exception {
+        UUID id = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        when(updateUseCase.update(new UpdatePostCommand(id, "수정 제목", "본문")))
+                .thenThrow(new IllegalArgumentException("Post를 찾을 수 없습니다."));
+
+        mvc.perform(
+                        put("/api/posts/{postId}", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"title\":\"수정 제목\",\"content\":\"본문\"}"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

@@ -93,7 +93,7 @@ class FindPostUseCaseValidationTest {
     @DisplayName("유효한 게시글 ID이면 메서드 검증을 통과하고 조회 결과를 반환한다")
     void acceptsValidFindQuery() {
         Post post = Post.of(POST_ID, BOARD_ID, "제목", "본문", CREATED_AT);
-        when(findPort.findById(POST_ID)).thenReturn(Optional.of(post));
+        when(findPort.findVisibleById(POST_ID)).thenReturn(Optional.of(post));
 
         var result = context.getBean(FindPostUseCase.class).find(new FindPostQuery(POST_ID));
 
@@ -106,7 +106,7 @@ class FindPostUseCaseValidationTest {
     void acceptsValidListQuery() {
         var request = OffsetPageRequest.of(0, 20);
         Post post = Post.of(POST_ID, BOARD_ID, "제목", "본문", CREATED_AT);
-        when(listPort.findAll(request)).thenReturn(OffsetPage.of(List.of(post), 0, 20, 1));
+        when(listPort.findAllVisible(request)).thenReturn(OffsetPage.of(List.of(post), 0, 20, 1));
 
         var result = context.getBean(FindPostsUseCase.class).find(new FindPostsQuery(request));
 

@@ -1,16 +1,19 @@
 package com.lilamaris.lilboard.board.web;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.lilamaris.lilboard.board.application.port.in.CreateBoardUseCase;
+import com.lilamaris.lilboard.board.application.port.in.DeleteBoardUseCase;
 import com.lilamaris.lilboard.board.application.port.in.FindBoardUseCase;
 import com.lilamaris.lilboard.board.application.port.in.FindBoardsUseCase;
 import com.lilamaris.lilboard.board.application.port.in.UpdateBoardUseCase;
 import com.lilamaris.lilboard.board.application.port.in.command.CreateBoardCommand;
+import com.lilamaris.lilboard.board.application.port.in.command.DeleteBoardCommand;
 import com.lilamaris.lilboard.board.application.port.in.command.UpdateBoardCommand;
 import com.lilamaris.lilboard.board.application.port.in.query.FindBoardQuery;
 import com.lilamaris.lilboard.board.application.port.in.query.FindBoardsQuery;
@@ -34,6 +37,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class BoardControllerTest {
     private CreateBoardUseCase useCase;
     private UpdateBoardUseCase updateUseCase;
+    private DeleteBoardUseCase deleteUseCase;
     private FindBoardUseCase findBoardUseCase;
     private FindBoardsUseCase findBoardsUseCase;
     private MockMvc mvc;
@@ -42,6 +46,7 @@ class BoardControllerTest {
     void setUp() {
         useCase = mock(CreateBoardUseCase.class);
         updateUseCase = mock(UpdateBoardUseCase.class);
+        deleteUseCase = mock(DeleteBoardUseCase.class);
         findBoardUseCase = mock(FindBoardUseCase.class);
         findBoardsUseCase = mock(FindBoardsUseCase.class);
         mvc =
@@ -49,8 +54,10 @@ class BoardControllerTest {
                                 new BoardController(
                                         useCase,
                                         updateUseCase,
+                                        deleteUseCase,
                                         findBoardUseCase,
                                         findBoardsUseCase))
+                        .setControllerAdvice(new GlobalExceptionHandler())
                         .build();
     }
 
@@ -103,7 +110,21 @@ class BoardControllerTest {
     @DisplayName("필수 값 누락·공백·길이 초과 또는 잘못된 JSON이면 400을 반환하고 생성하지 않는다")
     void rejectsInvalidBody(String body) throws Exception {
         mvc.perform(post("/api/boards").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("잘못된 요청"));
+        verifyNoInteractions(useCase);
+    }
+
+    @Test
+    @DisplayName("이름이 공백이면 400과 errors에 위반 필드를 담고 생성하지 않는다")
+    void exposesFieldErrorForBlankName() throws Exception {
+        mvc.perform(
+                        post("/api/boards")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"name\":\" \",\"description\":\"설명\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("요청값이 유효하지 않습니다."))
+                .andExpect(jsonPath("$.errors[0].field").value("name"));
         verifyNoInteractions(useCase);
     }
 
@@ -126,6 +147,20 @@ class BoardControllerTest {
                 .andExpect(jsonPath("$.description").value("수정 설명"))
                 .andExpect(jsonPath("$.createdAt").value(createdAt.toString()))
                 .andExpect(jsonPath("$.updatedAt").value(updatedAt.toString()));
+    }
+
+    @Test
+    @DisplayName("수정할 게시판이 조회되지 않으면 404를 반환한다")
+    void returnsNotFoundWhenBoardToUpdateIsNotVisible() throws Exception {
+        UUID id = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        when(updateUseCase.update(new UpdateBoardCommand(id, "새 이름", "새 설명")))
+                .thenThrow(new IllegalArgumentException("Board를 찾을 수 없습니다."));
+
+        mvc.perform(
+                        put("/api/boards/{boardId}", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"name\":\"새 이름\",\"description\":\"새 설명\"}"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -181,6 +216,34 @@ class BoardControllerTest {
     }
 
     @Test
+    @DisplayName("유효한 게시판 ID로 삭제하면 204를 반환하고 삭제 유스케이스를 호출한다")
+    void deletesBoard() throws Exception {
+        UUID id = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+        mvc.perform(delete("/api/boards/{boardId}", id)).andExpect(status().isNoContent());
+
+        verify(deleteUseCase).delete(new DeleteBoardCommand(id));
+    }
+
+    @Test
+    @DisplayName("삭제할 게시판이 없으면 유스케이스가 IllegalArgumentException을 던지고 404를 반환한다")
+    void deleteBoardNotFound() throws Exception {
+        UUID id = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        doThrow(new IllegalArgumentException("Board를 찾을 수 없습니다."))
+                .when(deleteUseCase)
+                .delete(new DeleteBoardCommand(id));
+
+        mvc.perform(delete("/api/boards/{boardId}", id)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("게시판 ID가 UUID 형식이 아니면 400을 반환하고 삭제하지 않는다")
+    void rejectsInvalidBoardIdForDelete() throws Exception {
+        mvc.perform(delete("/api/boards/invalid-id")).andExpect(status().isBadRequest());
+        verifyNoInteractions(deleteUseCase);
+    }
+
+    @Test
     @DisplayName("유효한 게시판 ID로 단건 조회하면 결과와 200을 반환한다")
     void findBoard() throws Exception {
         UUID id = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -205,7 +268,10 @@ class BoardControllerTest {
         when(findBoardUseCase.find(new FindBoardQuery(id)))
                 .thenThrow(new IllegalArgumentException("Board를 찾을 수 없습니다."));
 
-        mvc.perform(get("/api/boards/{boardId}", id)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/boards/{boardId}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("요청한 대상을 찾을 수 없습니다"))
+                .andExpect(jsonPath("$.detail").value("Board를 찾을 수 없습니다."));
     }
 
     @Test

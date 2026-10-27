@@ -4,9 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.lilamaris.lilboard.board.LauncherApplication;
 import com.lilamaris.lilboard.board.application.port.in.CreateBoardUseCase;
+import com.lilamaris.lilboard.board.application.port.in.DeleteBoardUseCase;
 import com.lilamaris.lilboard.board.application.port.in.command.CreateBoardCommand;
+import com.lilamaris.lilboard.board.application.port.in.command.DeleteBoardCommand;
+import com.lilamaris.lilboard.board.application.port.out.BoardFindPort;
 import com.lilamaris.lilboard.board.domain.Board;
+import com.lilamaris.lilboard.board.domain.Post;
 import com.lilamaris.lilboard.board.jpa.repository.BoardRepository;
+import com.lilamaris.lilboard.board.jpa.repository.PostRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +61,47 @@ class PostgresFlywayIntegrationTest {
                                     assertThat(persisted)
                                             .usingRecursiveComparison()
                                             .isEqualTo(board));
+        }
+    }
+
+    @Test
+    @DisplayName("게시글이 있는 게시판을 삭제하면 PostgreSQL 외래 키를 유지하고 게시판 행과 게시글을 보존한다")
+    void softDeletesBoardWithPostsWithoutViolatingForeignKey() {
+        try (PostgreSQLContainer postgres = startPostgres();
+                ConfigurableApplicationContext context = startApplication(postgres)) {
+            BoardRepository boards = context.getBean(BoardRepository.class);
+            PostRepository posts = context.getBean(PostRepository.class);
+            Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+            Instant updatedAt = CREATED_AT.plusSeconds(1);
+            board.updateName("수정한 게시판", updatedAt);
+            boards.saveAndFlush(board);
+            Post post =
+                    Post.of(
+                            UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                            ID,
+                            "제목",
+                            "본문",
+                            CREATED_AT);
+            posts.saveAndFlush(post);
+
+            context.getBean(DeleteBoardUseCase.class).delete(new DeleteBoardCommand(ID));
+
+            assertThat(context.getBean(BoardFindPort.class).findById(ID)).isEmpty();
+            assertThat(boards.findById(ID))
+                    .hasValueSatisfying(
+                            persisted -> {
+                                assertThat(persisted.getDeletedAt()).isAfterOrEqualTo(CREATED_AT);
+                                assertThat(persisted)
+                                        .usingRecursiveComparison()
+                                        .ignoringFields("deletedAt")
+                                        .isEqualTo(board);
+                            });
+            assertThat(posts.findById(post.getId()))
+                    .hasValueSatisfying(
+                            persisted ->
+                                    assertThat(persisted)
+                                            .usingRecursiveComparison()
+                                            .isEqualTo(post));
         }
     }
 

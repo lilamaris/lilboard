@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @Tag(name = "게시글", description = "게시글 관리 API")
 @RestController
@@ -55,7 +55,8 @@ public class PostController {
 
     @Operation(
             summary = "게시글 생성",
-            description = "게시판 ID와 제목, 본문으로 게시글을 생성합니다. ID와 생성 시각은 서버에서 지정합니다.",
+            description =
+                    "게시판 ID와 제목, 본문으로 게시글을 생성합니다. ID와 생성 시각은 서버에서 지정합니다. 조회 가능한 게시판(삭제되지 않은 게시판)에만 생성할 수 있습니다.",
             requestBody =
                     @io.swagger.v3.oas.annotations.parameters.RequestBody(
                             required = true,
@@ -90,7 +91,17 @@ public class PostController {
     @ApiResponse(
             responseCode = "400",
             description = "필수 값 누락, 공백, 최대 길이 초과 또는 잘못된 JSON 요청",
-            content = @Content)
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(
+            responseCode = "404",
+            description = "조회 가능한 게시판이 존재하지 않음",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreatePostResult create(@Valid @RequestBody CreatePostCommand command) {
@@ -110,7 +121,17 @@ public class PostController {
     @ApiResponse(
             responseCode = "400",
             description = "잘못된 게시글 ID, 필수 값 누락, 공백, 최대 길이 초과 또는 잘못된 JSON 요청",
-            content = @Content)
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(
+            responseCode = "404",
+            description = "조회 가능한 게시글이 존재하지 않음 (삭제된 게시판의 게시글 포함)",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
     @PutMapping("/{postId}")
     public UpdatePostResult update(
             @PathVariable("postId") UUID postId, @Valid @RequestBody UpdatePostRequest request) {
@@ -118,7 +139,7 @@ public class PostController {
                 new UpdatePostCommand(postId, request.title(), request.content()));
     }
 
-    @Operation(summary = "게시글 단건 조회", description = "게시글 ID로 게시글을 조회합니다.")
+    @Operation(summary = "게시글 단건 조회", description = "게시글 ID로 게시글을 조회합니다. 삭제된 게시판의 게시글은 조회할 수 없습니다.")
     @ApiResponse(
             responseCode = "200",
             description = "게시글 조회 성공",
@@ -126,37 +147,41 @@ public class PostController {
                     @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = FindPostResult.class)))
-    @ApiResponse(responseCode = "400", description = "잘못된 게시글 ID", content = @Content)
-    @ApiResponse(responseCode = "404", description = "게시글이 존재하지 않음", content = @Content)
+    @ApiResponse(
+            responseCode = "400",
+            description = "잘못된 게시글 ID",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(
+            responseCode = "404",
+            description = "게시글이 존재하지 않거나 삭제된 게시판에 소속된 게시글",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
     @GetMapping("/{postId}")
     public FindPostResult find(@PathVariable("postId") UUID postId) {
-        try {
-            return findPostUseCase.find(new FindPostQuery(postId));
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, exception.getMessage(), exception);
-        }
+        return findPostUseCase.find(new FindPostQuery(postId));
     }
 
     @Operation(
             summary = "게시글 목록 조회",
             description =
-                    "생성 시각과 ID 내림차순으로 게시글을 조회합니다. page는 0부터 시작하며 기본값은 0, size는 기본값 20인 양수입니다. offset(page × size)은 2147483647 이하여야 합니다.")
+                    "생성 시각과 ID 내림차순으로 게시글을 조회합니다. 삭제된 게시판에 소속된 게시글은 목록과 전체 개수에서 제외됩니다. page는 0부터 시작하며 기본값은 0, size는 기본값 20인 양수입니다. offset(page × size)은 2147483647 이하여야 합니다.")
     @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공")
     @ApiResponse(
             responseCode = "400",
             description = "잘못된 페이지 번호·크기 또는 offset 범위 초과",
-            content = @Content)
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
     @GetMapping
     public OffsetPage<FindPostResult> findAll(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
-        OffsetPageRequest pageRequest;
-        try {
-            pageRequest = OffsetPageRequest.of(page, size);
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 페이지 요청입니다.", exception);
-        }
-        return findPostsUseCase.find(new FindPostsQuery(pageRequest));
+        return findPostsUseCase.find(new FindPostsQuery(OffsetPageRequest.of(page, size)));
     }
 }

@@ -19,7 +19,7 @@ public class FindPostsService implements FindPostsUseCase {
     @Override
     @Transactional(readOnly = true)
     public OffsetPage<FindPostResult> find(FindPostsQuery query) {
-        var page = postListPort.findAll(query.pageRequest());
+        var page = postListPort.findAllVisible(query.pageRequest());
         return OffsetPage.of(
                 page.items().stream().map(FindPostResult::from).toList(),
                 page.page(),

@@ -26,7 +26,7 @@ public class BoardPortJpaAdapter implements BoardSavePort, BoardFindPort, BoardL
 
     @Override
     public Optional<Board> findById(UUID id) {
-        return repository.findById(id);
+        return repository.findByDeletedAtIsNullAndId(id);
     }
 
     @Override
@@ -36,7 +36,7 @@ public class BoardPortJpaAdapter implements BoardSavePort, BoardFindPort, BoardL
                         pageRequest.page(),
                         pageRequest.size(),
                         Sort.by(Sort.Direction.DESC, "createdAt", "id"));
-        var page = repository.findAll(pageable);
+        var page = repository.findByDeletedAtIsNull(pageable);
         return OffsetPage.of(
                 page.getContent(), page.getNumber(), page.getSize(), page.getTotalElements());
     }

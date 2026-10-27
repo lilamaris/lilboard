@@ -35,17 +35,28 @@ public class Board {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    private Board(UUID id, String name, String description, Instant createdAt, Instant updatedAt) {
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    private Board(
+            UUID id,
+            String name,
+            String description,
+            Instant createdAt,
+            Instant updatedAt,
+            Instant deletedAt) {
         this.id = Objects.requireNonNull(id, "id must not be null.");
         this.name = StringPrecondition.requireMaxLen(name, MAX_NAME_LENGTH);
         this.description = StringPrecondition.requireMaxLen(description, MAX_DESCRIPTION_LENGTH);
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null.");
 
         if (updatedAt != null) TimePrecondition.requireAfterOrEqual(updatedAt, createdAt);
+
+        if (deletedAt != null) TimePrecondition.requireAfterOrEqual(deletedAt, createdAt);
     }
 
     public static Board of(UUID id, String name, String description, Instant createdAt) {
-        return new Board(id, name, description, createdAt, null);
+        return new Board(id, name, description, createdAt, null, null);
     }
 
     public void updateName(String name, Instant updatedAt) {
@@ -59,6 +70,20 @@ public class Board {
                 StringPrecondition.requireMaxLen(description, MAX_DESCRIPTION_LENGTH);
         update(updatedAt);
         this.description = validatedDescription;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public void delete(Instant deletedAt) {
+        if (deletedAt == null) {
+            throw new NullPointerException("deletedAt must not be null.");
+        }
+        if (this.deletedAt != null) {
+            throw new IllegalStateException("Board는 이미 삭제되었습니다.");
+        }
+        this.deletedAt = TimePrecondition.requireAfterOrEqual(deletedAt, createdAt);
     }
 
     private void update(Instant updatedAt) {

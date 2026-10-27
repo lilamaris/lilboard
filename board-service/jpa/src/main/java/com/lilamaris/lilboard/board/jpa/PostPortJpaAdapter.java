@@ -25,18 +25,18 @@ public class PostPortJpaAdapter implements PostSavePort, PostFindPort, PostListP
     }
 
     @Override
-    public Optional<Post> findById(UUID id) {
-        return repository.findById(id);
+    public Optional<Post> findVisibleById(UUID id) {
+        return repository.findVisibleById(id);
     }
 
     @Override
-    public OffsetPage<Post> findAll(OffsetPageRequest pageRequest) {
+    public OffsetPage<Post> findAllVisible(OffsetPageRequest pageRequest) {
         var pageable =
                 PageRequest.of(
                         pageRequest.page(),
                         pageRequest.size(),
                         Sort.by(Sort.Direction.DESC, "createdAt", "id"));
-        var page = repository.findAll(pageable);
+        var page = repository.findVisible(pageable);
         return OffsetPage.of(
                 page.getContent(), page.getNumber(), page.getSize(), page.getTotalElements());
     }

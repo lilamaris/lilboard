@@ -24,7 +24,7 @@ public class UpdatePostService implements UpdatePostUseCase {
     public UpdatePostResult update(UpdatePostCommand command) {
         var post =
                 postFindPort
-                        .findById(command.postId())
+                        .findVisibleById(command.postId())
                         .orElseThrow(() -> new IllegalArgumentException("Post를 찾을 수 없습니다."));
 
         var now = clock.instant();

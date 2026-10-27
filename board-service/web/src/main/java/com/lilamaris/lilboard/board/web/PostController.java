@@ -55,7 +55,8 @@ public class PostController {
 
     @Operation(
             summary = "게시글 생성",
-            description = "게시판 ID와 제목, 본문으로 게시글을 생성합니다. ID와 생성 시각은 서버에서 지정합니다.",
+            description =
+                    "게시판 ID와 제목, 본문으로 게시글을 생성합니다. ID와 생성 시각은 서버에서 지정합니다. 조회 가능한 게시판(삭제되지 않은 게시판)에만 생성할 수 있습니다.",
             requestBody =
                     @io.swagger.v3.oas.annotations.parameters.RequestBody(
                             required = true,
@@ -91,10 +92,16 @@ public class PostController {
             responseCode = "400",
             description = "필수 값 누락, 공백, 최대 길이 초과 또는 잘못된 JSON 요청",
             content = @Content)
+    @ApiResponse(responseCode = "404", description = "조회 가능한 게시판이 존재하지 않음", content = @Content)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreatePostResult create(@Valid @RequestBody CreatePostCommand command) {
-        return createPostUseCase.create(command);
+        try {
+            return createPostUseCase.create(command);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, exception.getMessage(), exception);
+        }
     }
 
     @Operation(
@@ -111,14 +118,23 @@ public class PostController {
             responseCode = "400",
             description = "잘못된 게시글 ID, 필수 값 누락, 공백, 최대 길이 초과 또는 잘못된 JSON 요청",
             content = @Content)
+    @ApiResponse(
+            responseCode = "404",
+            description = "조회 가능한 게시글이 존재하지 않음 (삭제된 게시판의 게시글 포함)",
+            content = @Content)
     @PutMapping("/{postId}")
     public UpdatePostResult update(
             @PathVariable("postId") UUID postId, @Valid @RequestBody UpdatePostRequest request) {
-        return updatePostUseCase.update(
-                new UpdatePostCommand(postId, request.title(), request.content()));
+        try {
+            return updatePostUseCase.update(
+                    new UpdatePostCommand(postId, request.title(), request.content()));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, exception.getMessage(), exception);
+        }
     }
 
-    @Operation(summary = "게시글 단건 조회", description = "게시글 ID로 게시글을 조회합니다.")
+    @Operation(summary = "게시글 단건 조회", description = "게시글 ID로 게시글을 조회합니다. 삭제된 게시판의 게시글은 조회할 수 없습니다.")
     @ApiResponse(
             responseCode = "200",
             description = "게시글 조회 성공",
@@ -127,7 +143,10 @@ public class PostController {
                             mediaType = "application/json",
                             schema = @Schema(implementation = FindPostResult.class)))
     @ApiResponse(responseCode = "400", description = "잘못된 게시글 ID", content = @Content)
-    @ApiResponse(responseCode = "404", description = "게시글이 존재하지 않음", content = @Content)
+    @ApiResponse(
+            responseCode = "404",
+            description = "게시글이 존재하지 않거나 삭제된 게시판에 소속된 게시글",
+            content = @Content)
     @GetMapping("/{postId}")
     public FindPostResult find(@PathVariable("postId") UUID postId) {
         try {
@@ -141,7 +160,7 @@ public class PostController {
     @Operation(
             summary = "게시글 목록 조회",
             description =
-                    "생성 시각과 ID 내림차순으로 게시글을 조회합니다. page는 0부터 시작하며 기본값은 0, size는 기본값 20인 양수입니다. offset(page × size)은 2147483647 이하여야 합니다.")
+                    "생성 시각과 ID 내림차순으로 게시글을 조회합니다. 삭제된 게시판에 소속된 게시글은 목록과 전체 개수에서 제외됩니다. page는 0부터 시작하며 기본값은 0, size는 기본값 20인 양수입니다. offset(page × size)은 2147483647 이하여야 합니다.")
     @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공")
     @ApiResponse(
             responseCode = "400",

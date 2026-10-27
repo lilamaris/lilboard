@@ -5,5 +5,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface PostFindPort {
-    Optional<Post> findById(UUID id);
+    Optional<Post> findVisibleById(UUID id);
 }

@@ -22,15 +22,17 @@ class BoardTest {
     private static final Instant CREATED_AT = Instant.parse("2026-01-01T00:00:00Z");
 
     @Test
-    @DisplayName("Board를 생성하면 입력한 값으로 필드를 채우고 updatedAt은 null이다")
+    @DisplayName("Board를 생성하면 입력한 값으로 필드를 채우고 수정 시각과 삭제 시각은 null이다")
     void createsBoardWithGivenValues() {
         Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
 
+        assertThat(board.isDeleted()).isFalse();
         assertThat(board.getId()).isEqualTo(ID);
         assertThat(board.getName()).isEqualTo("게시판");
         assertThat(board.getDescription()).isEqualTo("설명");
         assertThat(board.getCreatedAt()).isEqualTo(CREATED_AT);
         assertThat(board.getUpdatedAt()).isNull();
+        assertThat(board.getDeletedAt()).isNull();
     }
 
     @Test
@@ -344,5 +346,73 @@ class BoardTest {
 
         assertThat(board.getDescription()).isEqualTo(original);
         assertThat(board.getUpdatedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("삭제 시각으로 게시판을 삭제하면 삭제 시각을 저장하고 나머지 필드를 유지한다")
+    void deletesBoardAndKeepsOtherFields() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        board.updateName("기존 값", CREATED_AT.plusSeconds(1));
+        Instant deletedAt = CREATED_AT.plusSeconds(10);
+
+        board.delete(deletedAt);
+
+        assertThat(board.getDeletedAt()).isEqualTo(deletedAt);
+        assertThat(board.isDeleted()).isTrue();
+        assertThat(board.getName()).isEqualTo("기존 값");
+        assertThat(board.getUpdatedAt()).isEqualTo(CREATED_AT.plusSeconds(1));
+        assertThat(board.getDescription()).isEqualTo("설명");
+        assertThat(board.getId()).isEqualTo(ID);
+        assertThat(board.getCreatedAt()).isEqualTo(CREATED_AT);
+    }
+
+    @Test
+    @DisplayName("삭제 시각이 생성 시각과 같으면 삭제를 허용한다")
+    void allowsDeletionAtCreationTime() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+
+        board.delete(CREATED_AT);
+
+        assertThat(board.getDeletedAt()).isEqualTo(CREATED_AT);
+    }
+
+    @Test
+    @DisplayName("삭제 시각이 생성 시각보다 1나노초 빠르면 예외를 던지고 삭제되지 않는다")
+    void rejectsDeletionBeforeCreationWithoutChangingState() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        Instant invalidTime = CREATED_AT.minusNanos(1);
+
+        IllegalComparisonConditionException exception =
+                catchThrowableOfType(
+                        IllegalComparisonConditionException.class, () -> board.delete(invalidTime));
+
+        assertThat(exception.condition()).isEqualTo(ComparisonCondition.AFTER_OR_EQUAL);
+        assertThat(exception.subject()).isEqualTo(invalidTime);
+        assertThat(exception.reference()).isEqualTo(CREATED_AT);
+        assertThat(board.getDeletedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("삭제 시각이 null이면 예외를 던지고 삭제되지 않는다")
+    void rejectsDeletionWithNullTimeWithoutChangingState() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+
+        assertThatThrownBy(() -> board.delete(null)).isInstanceOf(NullPointerException.class);
+
+        assertThat(board.getDeletedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("이미 삭제된 게시판을 다시 삭제하면 IllegalStateException을 던지고 첫 삭제 시각을 유지한다")
+    void rejectsDeletingAlreadyDeletedBoardWithoutChangingDeletedAt() {
+        Board board = Board.of(ID, "게시판", "설명", CREATED_AT);
+        Instant firstDeletedAt = CREATED_AT.plusSeconds(10);
+        board.delete(firstDeletedAt);
+
+        assertThatThrownBy(() -> board.delete(CREATED_AT.plusSeconds(20)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Board는 이미 삭제되었습니다.");
+
+        assertThat(board.getDeletedAt()).isEqualTo(firstDeletedAt);
     }
 }

@@ -44,7 +44,7 @@ class UpdatePostServiceTest {
     @DisplayName("수정 명령이 주어지면 제목·본문과 수정 시각을 갱신한 게시글을 저장하고 결과를 반환한다")
     void savesUpdatedPostAndReturnsResult() {
         Post post = Post.of(POST_ID, BOARD_ID, "기존 제목", "기존 본문", CREATED_AT);
-        when(postFindPort.findById(POST_ID)).thenReturn(Optional.of(post));
+        stubVisiblePost(post);
         when(postSavePort.save(any(Post.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -78,7 +78,7 @@ class UpdatePostServiceTest {
         Post saved = Post.of(POST_ID, BOARD_ID, "저장된 제목", "저장된 본문", CREATED_AT);
         Instant savedAt = UPDATED_AT.plusSeconds(1);
         saved.updateContent("저장된 본문", savedAt);
-        when(postFindPort.findById(POST_ID)).thenReturn(Optional.of(post));
+        stubVisiblePost(post);
         when(postSavePort.save(any(Post.class))).thenReturn(saved);
 
         UpdatePostResult result = service().update(new UpdatePostCommand(POST_ID, "새 제목", "새 본문"));
@@ -90,9 +90,9 @@ class UpdatePostServiceTest {
     }
 
     @Test
-    @DisplayName("수정할 게시글이 없으면 예외를 던지고 저장하지 않는다")
-    void throwsWhenPostNotFoundWithoutSaving() {
-        when(postFindPort.findById(POST_ID)).thenReturn(Optional.empty());
+    @DisplayName("가시 게시글이 조회되지 않으면 예외를 던지고 저장하지 않는다")
+    void throwsWhenPostIsNotVisibleWithoutSaving() {
+        when(postFindPort.findVisibleById(POST_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service().update(new UpdatePostCommand(POST_ID, "새 제목", "새 본문")))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -104,7 +104,7 @@ class UpdatePostServiceTest {
     @DisplayName("게시글 조회 포트에서 예외가 발생하면 호출자에게 전파하고 저장하지 않는다")
     void propagatesFindFailureWithoutSaving() {
         RuntimeException failure = new RuntimeException("조회 장애");
-        when(postFindPort.findById(POST_ID)).thenThrow(failure);
+        when(postFindPort.findVisibleById(POST_ID)).thenThrow(failure);
 
         assertThatThrownBy(() -> service().update(new UpdatePostCommand(POST_ID, "새 제목", "새 본문")))
                 .isSameAs(failure);
@@ -116,7 +116,7 @@ class UpdatePostServiceTest {
     void propagatesSaveFailure() {
         Post post = Post.of(POST_ID, BOARD_ID, "기존 제목", "기존 본문", CREATED_AT);
         RuntimeException failure = new RuntimeException("저장 장애");
-        when(postFindPort.findById(POST_ID)).thenReturn(Optional.of(post));
+        stubVisiblePost(post);
         when(postSavePort.save(any(Post.class))).thenThrow(failure);
 
         assertThatThrownBy(() -> service().update(new UpdatePostCommand(POST_ID, "새 제목", "새 본문")))
@@ -128,5 +128,9 @@ class UpdatePostServiceTest {
     void rejectsNullCommand() {
         assertThatThrownBy(() -> service().update(null)).isInstanceOf(NullPointerException.class);
         verifyNoInteractions(postFindPort, postSavePort);
+    }
+
+    private void stubVisiblePost(Post post) {
+        when(postFindPort.findVisibleById(POST_ID)).thenReturn(Optional.of(post));
     }
 }

@@ -35,7 +35,7 @@ class FindPostsServiceTest {
         first.updateTitle("수정 제목 A", updatedAt);
         Post second = Post.of(secondId, boardId, "제목 B", "본문 B", createdAt);
         var request = OffsetPageRequest.of(1, 2);
-        when(postListPort.findAll(request))
+        when(postListPort.findAllVisible(request))
                 .thenReturn(OffsetPage.of(List.of(first, second), 1, 2, 5));
 
         var result = new FindPostsService(postListPort).find(new FindPostsQuery(request));
@@ -59,7 +59,7 @@ class FindPostsServiceTest {
     @DisplayName("게시글이 없으면 빈 페이지와 전체 개수 0을 반환한다")
     void returnsEmptyPage() {
         var request = OffsetPageRequest.of(0, 20);
-        when(postListPort.findAll(request)).thenReturn(OffsetPage.of(List.of(), 0, 20, 0));
+        when(postListPort.findAllVisible(request)).thenReturn(OffsetPage.of(List.of(), 0, 20, 0));
 
         var result = new FindPostsService(postListPort).find(new FindPostsQuery(request));
 
@@ -70,7 +70,7 @@ class FindPostsServiceTest {
     @DisplayName("마지막 페이지를 벗어난 요청이면 빈 항목과 기존 전체 개수를 반환한다")
     void returnsPageBeyondLast() {
         var request = OffsetPageRequest.of(3, 20);
-        when(postListPort.findAll(request)).thenReturn(OffsetPage.of(List.of(), 3, 20, 5));
+        when(postListPort.findAllVisible(request)).thenReturn(OffsetPage.of(List.of(), 3, 20, 5));
 
         var result = new FindPostsService(postListPort).find(new FindPostsQuery(request));
 
@@ -82,7 +82,7 @@ class FindPostsServiceTest {
     void propagatesListFailure() {
         var request = OffsetPageRequest.of(0, 20);
         var failure = new IllegalStateException("DB 장애");
-        when(postListPort.findAll(request)).thenThrow(failure);
+        when(postListPort.findAllVisible(request)).thenThrow(failure);
 
         assertThatThrownBy(
                         () -> new FindPostsService(postListPort).find(new FindPostsQuery(request)))

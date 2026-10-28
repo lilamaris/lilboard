@@ -47,6 +47,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Run commit message script tests
+        run: python3 -m unittest discover -s .github/scripts/tests
+
       - name: Validate commit message format
         run: |
           python3 .github/scripts/validate-commit-messages.py \

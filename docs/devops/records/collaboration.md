@@ -44,4 +44,6 @@
 
 CI 구성: `commit-message` job의 검증 전에 `python3 -m unittest discover -s .github/scripts/tests` 단계를 추가했다. actionlint v1.7.12 로컬 통과.
 
-미확인 범위: Dependabot PR의 머지 커밋 통과와 required check 통과(원격 CI)는 main 반영 후 실제 PR 실행으로 확인해야 한다. main push의 `Merge pull request #N` 커밋는 job이 `pull_request` 전용이므로 검증 대상이 아니다.
+원격 CI 확인(2026-10-28, PR #22, [run `40622043210`](https://github.com/lilamaris/lilboard/actions/runs/40622043210)): `Validate commit messages` job의 `Run commit message script tests` 단계가 `Ran 22 tests`·`OK`로 통과했고, `Validate commit message format`이 `✅ 1개 커밋 메시지가 형식을 따릅니다`로 통과했다. 같은 run의 `Check formatting`과 `Build and test`도 통과했다. 이 PR은 머지 커밋를 포함하지 않아 머지 커밋 허용 자체의 원격 확인은 다음 Dependabot PR에서 수행한다.
+
+미확인 범위: Dependabot PR의 머지 커밋 통과와 required check 통과(원격 CI)는 main 반영 후 실제 PR 실행으로 확인해야 한다(체크리스트 ☐). main push의 `Merge pull request #N` 커밋는 job이 `pull_request` 전용이므로 검증 대상이 아니다.

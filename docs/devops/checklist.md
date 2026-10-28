@@ -101,6 +101,8 @@ P0를 우선 진행하되, 독립적인 P1 공통 컨테이너 구성과 로컬 
 | ☑ | 테스트 결과 PR 코멘트 게시 구성 | [설정·검증 기록](records/collaboration.md#테스트-결과-게시-구성) |
 | ☑ | 테스트 결과 PR 코멘트 원격 동작 확인 | [설정·검증 기록](records/collaboration.md#테스트-결과-게시-원격-검증) |
 | ☑ | 커밋 메시지 형식 검증 | [설정·검증 기록](records/collaboration.md#커밋-메시지-검증) |
+| ☑ | 커밋 메시지 머지 커밋 허용 + 스크립트 테스트 CI 실행 | [설정·검증 기록](records/collaboration.md#커밋-메시지-머지-커밋-허용), [정책 결정](adr/0002-commit-message-merge-policy.md) |
+| ☐ | 머지 커밋 허용의 원격 CI 확인 | Dependabot PR에서 머지 커밋 통과와 required check 통과 확인(main 반영 후) |
 | ☐ | `Makefile` | 반복 명령 단축이 필요할 때 도입 |
 | ☐ | `.devcontainer` | 개발 환경 공유가 필요할 때 도입 |
 | ☐ | 서비스 카탈로그 | 서비스별 담당자·저장소·배포·대시보드·runbook 연결 |

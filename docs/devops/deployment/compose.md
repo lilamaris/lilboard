@@ -37,6 +37,7 @@ cp .env.example .env
 | `BOARD_IMAGE` | `lilboard-board:local` | 빌드 결과 태그 또는 실행할 기존 이미지·digest |
 | `BOARD_BIND_ADDRESS` | `127.0.0.1` | 앱 포트를 바인딩할 호스트 주소 |
 | `BOARD_PORT` | `8080` | 호스트에서 접근할 앱 포트. 컨테이너 포트는 8080 |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | 없음 | OTLP export 기본 주소. Boot가 `<endpoint>/v1/traces`와 `<endpoint>/v1/logs`로 매핑한다. 빈 값은 건너뛰므로 미설정 시 exporter 기본값을 사용한다. 상세 근거는 [관찰성 기록](../records/observability.md) |
 
 현재 DB 초기화 계정을 앱에서도 사용한다. 운영 계정 분리와 시크릿 저장소 연동은 후속 구성이다. 초기화 변수는 빈 볼륨에만 적용되므로 기존 볼륨의 비밀번호·DB 이름·사용자를 `.env` 변경만으로 바꿀 수 없다.
 

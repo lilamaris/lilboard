@@ -81,7 +81,7 @@ public class Board {
             throw new NullPointerException("deletedAt must not be null.");
         }
         if (this.deletedAt != null) {
-            throw new IllegalStateException("Board는 이미 삭제되었습니다.");
+            throw new IllegalStateException("already deleted.");
         }
         this.deletedAt = TimePrecondition.requireAfterOrEqual(deletedAt, createdAt);
     }

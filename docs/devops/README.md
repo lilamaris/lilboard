@@ -21,6 +21,7 @@ DevOps 관련 진행 상태, 상세 설정과 검증 기록, 실행 안내, 정�
 | [PostgreSQL과 Flyway](records/postgres-flyway.md) | 프로파일, Flyway 적용, 재기동, 로컬·원격 CI 검증 |
 | [컨테이너 이미지](records/container-image.md) | Dockerfile·빌드 컨텍스트, 이미지 빌드·기동 검증 |
 | [Compose](records/compose.md) | 환경 변수 예시, API·재기동·데이터 유지 검증 |
+| [관찰성](records/observability.md) | 앱 측 actuator·OTel 연결, OTLP 환경 변수, scrape/traces 수신 검증과 미확인 항목 |
 | [협업](records/collaboration.md) | 이슈·PR 템플릿, 테스트 요약 게시, 커밋 메시지 검증 |
 | [문서 구조](records/documentation.md) | 문서 분리와 경로·포맷 검증 |
 

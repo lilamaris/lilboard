@@ -4,3 +4,19 @@ spring:
 
 server:
   port: 8080
+
+management:
+  endpoints:
+    web:
+      # Prometheus는 별도 관측성 호스트에서 scrape한다. 앱은 scrape 대상 엔드포인트만 노출한다.
+      exposure:
+        include: health,metrics,prometheus
+  tracing:
+    sampling:
+      # 낮은 트래픽에서는 head sampling 1.0이 trace 조회에 유용하다. 환경 변수로 조정한다.
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    metrics:
+      export:
+        # 메트릭은 scrape로 수집하므로 OTLP push를 끄고 중복 전송을 피한다.
+        enabled: false

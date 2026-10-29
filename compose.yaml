@@ -9,6 +9,9 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lilboard}
       DB_USERNAME: ${POSTGRES_USER:-lilboard}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env or the environment}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${BOARD_BIND_ADDRESS:-127.0.0.1}:${BOARD_PORT:-8080}:8080"
     depends_on:

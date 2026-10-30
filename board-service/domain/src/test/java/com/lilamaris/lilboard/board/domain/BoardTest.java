@@ -411,7 +411,7 @@ class BoardTest {
 
         assertThatThrownBy(() -> board.delete(CREATED_AT.plusSeconds(20)))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Board는 이미 삭제되었습니다.");
+                .hasMessage("already deleted.");
 
         assertThat(board.getDeletedAt()).isEqualTo(firstDeletedAt);
     }

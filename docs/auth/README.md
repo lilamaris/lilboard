@@ -111,3 +111,8 @@ AccessTokenIssuePort를 사용하며, Spring Security 인증과 JWT 서명 구�
 시딩 API의 공개 예외는 seed 모듈이 `loadtest` 프로파일에서 등록하는
 `HttpAuthorizationCustomizer`로 추가한다. 정확히 `POST /api/seed`만 허용하며
 일반 프로파일에는 예외를 등록하지 않는다. web은 기본 규칙과 최종 차단 정책을 유지한다.
+
+CSRF 보호는 기본 활성화한다. `Content-Type: application/json`인 요청과 board의
+명시적인 `Authorization: Bearer ...` 요청에만 CSRF 예외를 적용한다.
+브라우저 폼·text/plain 변경 요청은 CSRF 토큰이 없으면 403으로 차단한다.
+비로그인 시딩 요청도 `Content-Type: application/json`을 명시해야 한다.

@@ -41,20 +41,27 @@ class BoardWebSecurityTest {
     @Test
     @DisplayName("비로그인 사용자의 생성 요청은 401로 거부된다")
     void rejectsAnonymousWrite() throws Exception {
-        mvc.perform(post("/api/boards")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/boards").contentType("application/json"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     @DisplayName("회원은 게시판을 생성할 수 있다")
     void allowsMemberWrite() throws Exception {
-        mvc.perform(post("/api/boards").with(user("member").roles("MEMBER")))
+        mvc.perform(
+                        post("/api/boards")
+                                .contentType("application/json")
+                                .with(user("member").roles("MEMBER")))
                 .andExpect(status().isOk());
     }
 
     @Test
     @DisplayName("회원 권한이 없는 사용자의 생성 요청은 403으로 거부된다")
     void rejectsNonMemberWrite() throws Exception {
-        mvc.perform(post("/api/boards").with(user("guest").roles("GUEST")))
+        mvc.perform(
+                        post("/api/boards")
+                                .contentType("application/json")
+                                .with(user("guest").roles("GUEST")))
                 .andExpect(status().isForbidden());
     }
 
@@ -63,6 +70,36 @@ class BoardWebSecurityTest {
     void deniesUnlistedEndpoint() throws Exception {
         mvc.perform(get("/api/private").with(user("member").roles("MEMBER")))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("회원의 브라우저 폼 요청도 CSRF 토큰이 없으면 차단한다")
+    void rejectsFormWriteWithoutCsrfToken() throws Exception {
+        mvc.perform(
+                        post("/api/boards")
+                                .contentType("application/x-www-form-urlencoded")
+                                .with(user("member").roles("MEMBER")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("text/plain 요청은 CSRF 예외를 적용하지 않는다")
+    void rejectsPlainTextWriteWithoutCsrfToken() throws Exception {
+        mvc.perform(
+                        post("/api/boards")
+                                .contentType("text/plain")
+                                .with(user("member").roles("MEMBER")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("문자셋이 포함된 JSON 요청은 별도 CSRF 토큰 없이 회원 정책을 적용한다")
+    void acceptsJsonWithCharset() throws Exception {
+        mvc.perform(
+                        post("/api/boards")
+                                .contentType("application/json;charset=UTF-8")
+                                .with(user("member").roles("MEMBER")))
+                .andExpect(status().isOk());
     }
 
     @Configuration

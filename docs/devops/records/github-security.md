@@ -56,3 +56,14 @@ run `39482226154`의 `Analyze (java-kotlin)`·`Analyze (actions)` job 모두 성
 
 - GitHub 보안 기능은 저장소 공개 범위·소유 형태·요금제에 따라 사용 가능 여부가 다르다. 비공개 저장소의 CodeQL·dependency review는 Code Security 등 사용 조건을 먼저 확인한다. secret scanning·push protection은 별도로 확인하며, 단순히 Security 탭을 활성화하는 것으로 완료 처리하지 않는다. [CodeQL 사용 조건](https://docs.github.com/en/code-security/reference/code-scanning/troubleshoot-analysis-errors/private-repository-enablement), [Dependency review 사용 조건](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-review)
 - push protection은 합성 값으로 검증되지 않는다(2026-10-21, 4회 시도·alert 0). GitHub PAT는 GitHub이 실 존재를 검증하고, 합성 값은 차단되지 않는다. 개인 저장소에는 org test mode가 없어 확인 조건은 실 토큰 push 후 revoke뿐이다.
+
+## PR 28 CSRF 경고 조치
+
+- 확인 일자: 2026-10-30 (Asia/Seoul).
+- 대상: [PR #28 CodeQL 검사](https://github.com/lilamaris/lilboard/runs/123983647305).
+- 원인: board·identity의 `csrf(AbstractHttpConfigurer::disable)` 두 곳에서 high 경고 발생.
+  빌드·테스트·포맷·커밋 메시지 및 CodeQL 분석 작업 자체는 통과했고, 경고 평가 검사가 실패했다.
+- 조치: [API CSRF 정책](../adr/0004-api-csrf-protection.md)에 따라 기본 보호를 복구하고 JSON 및
+  board의 명시적인 Bearer 요청만 제외한다. 폼·text/plain 차단 회귀 테스트를 추가했다.
+- 로컬 검증: `./gradlew spotlessApply build spotlessCheck --console=plain` 통과. 전체 테스트·PostgreSQL 통합 검증·모듈별 커버리지·포맷 검사 성공. 원격 재검사 결과는 후속 기록한다.
+- 기준: `5523754` 위 작업 트리 수정. CodeQL 경고 억제나 dismiss는 하지 않았다.

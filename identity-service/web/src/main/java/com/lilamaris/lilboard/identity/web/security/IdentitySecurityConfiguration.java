@@ -4,6 +4,7 @@ import com.lilamaris.lilboard.identity.application.CredentialService;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -14,7 +15,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.*;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.converter.RsaKeyConverters;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -65,7 +65,7 @@ public class IdentitySecurityConfiguration {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(AbstractHttpConfigurer::disable)
+        return http.csrf(csrf -> csrf.ignoringRequestMatchers(this::isJsonRequest))
                 .sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
@@ -92,5 +92,12 @@ public class IdentitySecurityConfiguration {
                                 errors.authenticationEntryPoint(
                                         (request, response, exception) -> response.sendError(401)))
                 .build();
+    }
+
+    // JSON is not a browser form content type. Form and text/plain requests retain CSRF checks.
+    private boolean isJsonRequest(HttpServletRequest request) {
+        String contentType = request.getContentType();
+        return contentType != null
+                && contentType.split(";", 2)[0].strip().equalsIgnoreCase("application/json");
     }
 }

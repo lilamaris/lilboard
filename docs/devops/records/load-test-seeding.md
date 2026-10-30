@@ -40,7 +40,7 @@
 ## 사용 방법
 
 1. `loadtest` 프로파일을 PostgreSQL 환경에 추가해 기동한다. 예: `SPRING_PROFILES_ACTIVE=prod,loadtest`.
-2. 시딩 실행: `curl -X POST 'http://localhost:8080/api/seed?boards=1000&postsPerBoard=100'`.
+2. 시딩 실행: `curl -X POST -H 'Content-Type: application/json' 'http://localhost:8080/api/seed?boards=1000&postsPerBoard=100'`.
 3. 응답 예: `{"boards":1000,"posts":100000,"totalRows":101000}`. 상한 초과 응답은 400 ProblemDetail이고 저장되지 않는다.
 4. 시딩 데이터는 삭제하지 않으므로 부하 테스트 전용 DB·스키마에서 실행한다.
 

@@ -172,6 +172,27 @@ class IdentityWebSecurityTest {
                 .andExpect(jsonPath("$.paths['/api/auth/login'].post.responses['401']").exists());
     }
 
+    @Test
+    @DisplayName("CSRF 토큰이 없는 브라우저 폼 로그인 요청은 403으로 차단된다")
+    void rejectsFormLoginWithoutCsrfToken() throws Exception {
+        mvc.perform(
+                        post("/api/auth/login")
+                                .contentType("application/x-www-form-urlencoded")
+                                .param("email", "user@example.com")
+                                .param("password", "password123"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("JSON 본문을 text/plain으로 보낸 회원가입 요청은 403으로 차단된다")
+    void rejectsPlainTextRegistrationWithoutCsrfToken() throws Exception {
+        mvc.perform(
+                        post("/api/auth/register")
+                                .contentType("text/plain")
+                                .content(body("password123")))
+                .andExpect(status().isForbidden());
+    }
+
     private String body(String password) {
         return "{\"email\":\"user@example.com\",\"password\":\"" + password + "\"}";
     }

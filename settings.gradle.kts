@@ -28,3 +28,13 @@ include("board-service:jpa")
 include("board-service:web")
 
 include("board-service:seed")
+
+include("identity-service:domain")
+
+include("identity-service:application")
+
+include("identity-service:jpa")
+
+include("identity-service:web")
+
+include("identity-service:launcher")

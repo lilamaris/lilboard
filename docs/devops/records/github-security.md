@@ -67,3 +67,13 @@ run `39482226154`의 `Analyze (java-kotlin)`·`Analyze (actions)` job 모두 성
   board의 명시적인 Bearer 요청만 제외한다. 폼·text/plain 차단 회귀 테스트를 추가했다.
 - 로컬 검증: `./gradlew spotlessApply build spotlessCheck --console=plain` 통과. 전체 테스트·PostgreSQL 통합 검증·모듈별 커버리지·포맷 검사 성공. 원격 재검사 결과는 후속 기록한다.
 - 기준: `5523754` 위 작업 트리 수정. CodeQL 경고 억제나 dismiss는 하지 않았다.
+
+### 원격 재검사 결과
+
+- 확인 일자: 2026-10-30 (Asia/Seoul).
+- 수정 커밋: `2ee8033aee3d0ed02298e7e3770825c253b44647`.
+- [CI 실행](https://github.com/lilamaris/lilboard/actions/runs/41033385280): 포맷·커밋 메시지·빌드 및 테스트 통과.
+- [CodeQL 분석](https://github.com/lilamaris/lilboard/actions/runs/41033382753): actions·java-kotlin 통과.
+- [CodeQL 경고 평가](https://github.com/lilamaris/lilboard/runs/123988530719): 성공, 기존 CSRF 경고 2개 해소.
+- 분석 완료 전에는 java-kotlin 구성 미발견으로 neutral이 표시됐으나, 분석 완료 후 같은 검사가 success로 갱신된 것을 확인했다.
+- PR #28의 해당 커밋 검사 7개가 모두 통과했다. 실제 운영·부하 테스트 환경 검증은 포함하지 않는다.

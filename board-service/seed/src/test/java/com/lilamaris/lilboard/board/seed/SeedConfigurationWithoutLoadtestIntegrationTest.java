@@ -2,6 +2,7 @@ package com.lilamaris.lilboard.board.seed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.lilamaris.lilboard.board.web.security.HttpAuthorizationCustomizer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ class SeedConfigurationWithoutLoadtestIntegrationTest {
         assertThat(context.getBeansOfType(SeedController.class)).isEmpty();
         assertThat(context.getBeansOfType(SeedService.class)).isEmpty();
         assertThat(context.getBeansOfType(SeedStore.class)).isEmpty();
+        assertThat(context.getBeansOfType(HttpAuthorizationCustomizer.class)).isEmpty();
         assertThat(context.getBeansOfType(SeedLimits.class)).isEmpty();
     }
 }

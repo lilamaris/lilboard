@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 부하 테스트용 시딩 엔드포인트.
  *
  * <p>{@code @Profile("loadtest")}와 {@code @RestController} 조합으로 loadtest 프로파일에서만 스테레오타입 스캔에 등록된다.
- * prod·test 프로파일에서는 컨트롤러 빈 자체가 없으므로 요청은 404로 처리된다.
+ * loadtest가 없는 프로파일에서는 컨트롤러와 접근 허용 빈이 등록되지 않아 요청이 기본 보안 정책으로 차단된다.
  */
 @Profile("loadtest")
 @Tag(name = "부하 테스트 시딩", description = "loadtest 프로파일 전용 시딩 API")

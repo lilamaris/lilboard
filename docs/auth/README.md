@@ -107,3 +107,7 @@ AccessTokenIssuePort를 사용하며, Spring Security 인증과 JWT 서명 구�
 보안 어댑터가 담당한다. HTTP 응답의 Bearer 표기는 LoginResponse에서 구성한다.
 인증 API의 OpenAPI 문서는 `/v3/api-docs`, Swagger UI는 `/swagger-ui.html`에서
 비로그인 상태로 조회할 수 있다.
+
+시딩 API의 공개 예외는 seed 모듈이 `loadtest` 프로파일에서 등록하는
+`HttpAuthorizationCustomizer`로 추가한다. 정확히 `POST /api/seed`만 허용하며
+일반 프로파일에는 예외를 등록하지 않는다. web은 기본 규칙과 최종 차단 정책을 유지한다.

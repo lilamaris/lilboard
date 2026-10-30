@@ -16,7 +16,7 @@
 | JDBC 배치 크기 | `board.seed.batch-size` (기본 500) |
 | 활성화 프로파일 | `loadtest` |
 
-- `loadtest`가 없으면 `SeedController`·`SeedService`·`SeedStore`·`SeedLimits` 빈이 등록되지 않는다. `prod`와 `test`에서는 시딩 엔드포인트가 존재하지 않고 요청은 404 ProblemDetail로 처리된다.
+- `loadtest`가 없으면 `SeedController`·`SeedService`·`SeedStore`·`SeedLimits` 빈이 등록되지 않는다. `loadtest`가 없는 `prod`·`test`에서는 시딩 엔드포인트와 보안 허용 빈이 존재하지 않는다. 비로그인 요청은 401, 회원 JWT 요청은 403으로 기본 차단된다.
 - 총 행 상한을 넘는 요청과 `boards ≤ 0`, `postsPerBoard < 0`은 저장 전에 `IllegalComparisonConditionException`·`IllegalValueConditionException`으로 실패하고 400 ProblemDetail을 반환한다. 실패 시 데이터가 남지 않는다.
 - 게시판·게시글은 JDBC 배치로 기록한다. 게시판 행을 먼저 기록하고 게시글을 기록하므로 `post.board_id` 외래 키가 유지된다.
 - 생성 시각는 시딩 시각을 가장 최근 행으로 두고 행마다 1초씩 앞선다. 게시글은 자기 게시판보다 최근 시각을 가진다.
@@ -43,3 +43,28 @@
 2. 시딩 실행: `curl -X POST 'http://localhost:8080/api/seed?boards=1000&postsPerBoard=100'`.
 3. 응답 예: `{"boards":1000,"posts":100000,"totalRows":101000}`. 상한 초과 응답은 400 ProblemDetail이고 저장되지 않는다.
 4. 시딩 데이터는 삭제하지 않으므로 부하 테스트 전용 DB·스키마에서 실행한다.
+
+## 프로파일별 보안 확장
+
+[정책 ADR](../adr/0003-loadtest-seed-security-extension.md)
+
+- 구성 일자: 2026-10-30 (Asia/Seoul).
+- web의 `HttpAuthorizationCustomizer` 확장점을 seed의 `SeedSecurityConfiguration`에서 구현한다.
+- `loadtest`에서만 빈을 등록하며 정확히 `POST /api/seed`를 `permitAll()`로 허용한다.
+- web은 기본 규칙 뒤, 최종 `anyRequest().denyAll()` 앞에서 확장 빈을 순서대로 적용한다.
+  seed 경로나 loadtest 프로파일에 직접 의존하지 않으며, 별도 보안 필터 체인을 추가하지 않는다.
+- `seed → web` 의존성을 사용하고 web은 seed를 참조하지 않는다.
+- 다른 메서드·하위 경로 및 일반 게시판 변경 API의 접근 정책은 유지한다.
+- 검증 근거: `SeedApiIntegrationTest`, `SeedDisabledOutsideLoadtestProfileIntegrationTest`,
+  `SeedConfigurationIntegrationTest`, `SeedConfigurationWithoutLoadtestIntegrationTest`.
+- 기준 커밋: `f76e9d6` 위 작업 트리 변경. 로컬 검증 결과는 아래에 기록하며 원격 CI와 실제 부하 테스트 환경 확인은 미실행이다.
+
+### 보안 확장 로컬 검증 결과
+
+- 확인 일자: 2026-10-30 (Asia/Seoul), `f76e9d6` 위 작업 트리 변경.
+- 명령: `./gradlew spotlessApply build spotlessCheck --console=plain`.
+- 결과: 전체 빌드·테스트·모듈별 커버리지·포맷 검사 통과.
+- 이전에 실패했던 시딩 API 테스트 8개 통과. 정확한 경로·메서드 범위와 일반 API의 회원 정책 유지,
+  loadtest 비활성 상태의 401·403 차단 회귀 테스트를 추가했다.
+- 관련 보고서: `board-service/{web,seed,launcher}/build/reports/tests/test/index.html`.
+- 원격 CI 및 실제 부하 테스트 환경에서의 동작은 미확인이다.

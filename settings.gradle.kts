@@ -26,3 +26,5 @@ include("board-service:launcher")
 include("board-service:jpa")
 
 include("board-service:web")
+
+include("board-service:seed")

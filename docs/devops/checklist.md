@@ -102,6 +102,9 @@ P0를 우선 진행하되, 독립적인 P1 공통 컨테이너 구성과 로컬 
 | ☑ | 테스트 결과 PR 코멘트 원격 동작 확인 | [설정·검증 기록](records/collaboration.md#테스트-결과-게시-원격-검증) |
 | ☑ | 커밋 메시지 형식 검증 | [설정·검증 기록](records/collaboration.md#커밋-메시지-검증) |
 | ☑ | 커밋 메시지 머지 커밋 허용 + 스크립트 테스트 CI 실행 | [설정·검증 기록](records/collaboration.md#커밋-메시지-머지-커밋-허용), [정책 결정](adr/0002-commit-message-merge-policy.md) |
+| ☑ | `loadtest` 프로파일과 시딩 API 구성(Board·Post, 개수 파라미터·총 행 상한) | [설정·검증 기록](records/load-test-seeding.md#구성) |
+| ☑ | 시딩 프로파일 게이트·상한·배치·PostgreSQL 저장 테스트 | [설정·검증 기록](records/load-test-seeding.md#검증-기록) |
+| ☐ | 실제 부하 테스트 환경에서 시딩 실행과 데이터 사용 확인 | loadtest 기동 환경에서 시딩 실행과 부하 테스트 도구 활용, 실행 시간·상한 조정 확인 |
 | ☐ | 머지 커밋 허용의 원격 CI 확인 | Dependabot PR에서 머지 커밋 통과와 required check 통과 확인(main 반영 후) |
 | ☐ | `Makefile` | 반복 명령 단축이 필요할 때 도입 |
 | ☐ | `.devcontainer` | 개발 환경 공유가 필요할 때 도입 |

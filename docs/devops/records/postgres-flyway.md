@@ -6,6 +6,8 @@
 
 대상: 실행 프로파일 분리(`prod` PostgreSQL + Flyway / `test` H2)
 
+`prod`·`test` 프로파일 분리를 확인한다. `prod`는 PostgreSQL과 Flyway를 사용하고 `test`는 H2를 사용한다. 부하 테스트용 `loadtest`는 [부하 테스트 시딩 기록](load-test-seeding.md#구성)에서 별도로 관리한다. [부하 테스트 시딩 검증](load-test-seeding.md#검증-기록)에서 `prod + loadtest` 조합을 확인한다 — `feat/load-test-seed` 작업 트리 검증 (2026-10-30)
+
 `e5f4d9b` (실제 PostgreSQL 마이그레이션 검증은 P0에 별도 기록)
 
 ## 통합 테스트 구성

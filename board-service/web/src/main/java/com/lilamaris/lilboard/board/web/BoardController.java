@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -37,6 +38,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "게시판", description = "게시판 관리 API")
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/boards")
 public class BoardController {
@@ -45,19 +47,6 @@ public class BoardController {
     private final DeleteBoardUseCase deleteBoardUseCase;
     private final FindBoardUseCase findBoardUseCase;
     private final FindBoardsUseCase findBoardsUseCase;
-
-    public BoardController(
-            CreateBoardUseCase createBoardUseCase,
-            UpdateBoardUseCase updateBoardUseCase,
-            DeleteBoardUseCase deleteBoardUseCase,
-            FindBoardUseCase findBoardUseCase,
-            FindBoardsUseCase findBoardsUseCase) {
-        this.createBoardUseCase = createBoardUseCase;
-        this.updateBoardUseCase = updateBoardUseCase;
-        this.deleteBoardUseCase = deleteBoardUseCase;
-        this.findBoardUseCase = findBoardUseCase;
-        this.findBoardsUseCase = findBoardsUseCase;
-    }
 
     @Operation(
             summary = "게시판 생성",

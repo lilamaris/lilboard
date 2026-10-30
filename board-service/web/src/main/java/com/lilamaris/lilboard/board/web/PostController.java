@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "게시글", description = "게시글 관리 API")
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/posts")
 public class PostController {
@@ -41,17 +43,6 @@ public class PostController {
     private final UpdatePostUseCase updatePostUseCase;
     private final FindPostUseCase findPostUseCase;
     private final FindPostsUseCase findPostsUseCase;
-
-    public PostController(
-            CreatePostUseCase createPostUseCase,
-            UpdatePostUseCase updatePostUseCase,
-            FindPostUseCase findPostUseCase,
-            FindPostsUseCase findPostsUseCase) {
-        this.createPostUseCase = createPostUseCase;
-        this.updatePostUseCase = updatePostUseCase;
-        this.findPostUseCase = findPostUseCase;
-        this.findPostsUseCase = findPostsUseCase;
-    }
 
     @Operation(
             summary = "게시글 생성",

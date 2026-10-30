@@ -2,6 +2,7 @@ package com.lilamaris.lilboard.board.seed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.lilamaris.lilboard.board.web.security.HttpAuthorizationCustomizer;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,6 +33,7 @@ class SeedConfigurationIntegrationTest {
         assertThat(context.getBeansOfType(SeedController.class)).hasSize(1);
         assertThat(context.getBeansOfType(SeedService.class)).hasSize(1);
         assertThat(context.getBeansOfType(SeedStore.class)).hasSize(1);
+        assertThat(context.getBeansOfType(HttpAuthorizationCustomizer.class)).hasSize(1);
 
         SeedLimits limits = context.getBean(SeedLimits.class);
         assertThat(limits.maxTotalRows()).isEqualTo(100_000);

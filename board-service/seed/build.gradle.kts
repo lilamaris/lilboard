@@ -10,6 +10,8 @@ group = "com.lilamaris.lilboard"
 version = "0.0.1-SNAPSHOT"
 
 dependencies {
+    implementation(project(":board-service:web"))
+    implementation(libs.spring.boot.starter.security)
     api(libs.spring.web)
     api(libs.spring.jdbc)
 

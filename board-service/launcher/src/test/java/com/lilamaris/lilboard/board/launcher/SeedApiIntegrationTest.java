@@ -138,6 +138,26 @@ class SeedApiIntegrationTest {
         assertThat(postRepository.findAll()).extracting(Post::getTitle).hasSize(4);
     }
 
+    @Test
+    @DisplayName("loadtest에서도 시딩 경로의 하위 경로는 비로그인 사용자에게 허용하지 않는다")
+    void rejectsSeedSubpath() throws Exception {
+        assertThat(post("/api/seed/other").statusCode()).isEqualTo(401);
+        assertThat(boardRepository.count()).isZero();
+    }
+
+    @Test
+    @DisplayName("loadtest에서도 시딩 경로의 GET 요청은 비로그인 사용자에게 허용하지 않는다")
+    void rejectsOtherSeedMethod() throws Exception {
+        assertThat(get("/api/seed").statusCode()).isEqualTo(401);
+    }
+
+    @Test
+    @DisplayName("loadtest에서도 일반 게시판 생성은 회원 인증을 요구한다")
+    void preservesMemberPolicyForBoardWrite() throws Exception {
+        assertThat(post("/api/boards").statusCode()).isEqualTo(401);
+        assertThat(boardRepository.count()).isZero();
+    }
+
     private HttpResponse<String> post(String path) throws Exception {
         try (HttpClient client = HttpClient.newHttpClient()) {
             return client.send(

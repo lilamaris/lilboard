@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:identity-test;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+auth:
+  jwt:
+    issuer: http://localhost:8081
+    public-key: classpath:test-public.pem
+    private-key: classpath:test-private.pem

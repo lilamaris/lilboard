@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "댓글", description = "댓글 관리 API")
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/posts/{postId}/comments")
 public class CommentController {
@@ -46,19 +48,6 @@ public class CommentController {
     private final DeleteCommentUseCase deleteCommentUseCase;
     private final FindCommentUseCase findCommentUseCase;
     private final FindCommentsUseCase findCommentsUseCase;
-
-    public CommentController(
-            CreateCommentUseCase createCommentUseCase,
-            UpdateCommentUseCase updateCommentUseCase,
-            DeleteCommentUseCase deleteCommentUseCase,
-            FindCommentUseCase findCommentUseCase,
-            FindCommentsUseCase findCommentsUseCase) {
-        this.createCommentUseCase = createCommentUseCase;
-        this.updateCommentUseCase = updateCommentUseCase;
-        this.deleteCommentUseCase = deleteCommentUseCase;
-        this.findCommentUseCase = findCommentUseCase;
-        this.findCommentsUseCase = findCommentsUseCase;
-    }
 
     @Operation(
             summary = "댓글 생성",

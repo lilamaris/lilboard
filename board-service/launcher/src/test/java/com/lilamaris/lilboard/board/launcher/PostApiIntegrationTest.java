@@ -23,6 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@org.springframework.context.annotation.Import(TestMemberAuthentication.class)
 class PostApiIntegrationTest {
     private static final UUID BOARD_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final UUID POST_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
@@ -43,7 +44,7 @@ class PostApiIntegrationTest {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpResponse<String> response =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create(
                                                     "http://localhost:"
                                                             + port
@@ -73,7 +74,7 @@ class PostApiIntegrationTest {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpResponse<String> response =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create("http://localhost:" + port + "/api/posts"))
                                     .header("Content-Type", "application/json")
                                     .POST(
@@ -102,7 +103,7 @@ class PostApiIntegrationTest {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpResponse<String> response =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create("http://localhost:" + port + "/api/posts"))
                                     .header("Content-Type", "application/json")
                                     .POST(
@@ -136,7 +137,7 @@ class PostApiIntegrationTest {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpResponse<String> response =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create(
                                                     "http://localhost:"
                                                             + port
@@ -168,7 +169,7 @@ class PostApiIntegrationTest {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpResponse<String> response =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create(
                                                     "http://localhost:"
                                                             + port
@@ -213,7 +214,7 @@ class PostApiIntegrationTest {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpResponse<String> response =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create(
                                                     "http://localhost:"
                                                             + port

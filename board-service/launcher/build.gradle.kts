@@ -18,5 +18,9 @@ dependencies {
     implementation(project(":board-service:seed"))
     implementation(project(":board-service:web"))
 
+    testImplementation(libs.spring.boot.starter.oauth2.resource.server)
+    testImplementation(libs.spring.security.test)
+    testImplementation(libs.spring.boot.starter.webmvc.test)
+
     testImplementation(libs.archunit.junit5)
 }

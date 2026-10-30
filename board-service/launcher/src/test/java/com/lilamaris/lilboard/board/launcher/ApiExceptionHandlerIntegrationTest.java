@@ -18,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@org.springframework.context.annotation.Import(TestMemberAuthentication.class)
 class ApiExceptionHandlerIntegrationTest {
     @LocalServerPort private int port;
 
@@ -70,12 +71,12 @@ class ApiExceptionHandlerIntegrationTest {
     }
 
     private HttpResponse<String> get(String path) throws Exception {
-        return send(HttpRequest.newBuilder(uri(path)).GET().build());
+        return send(TestMemberAuthentication.memberRequest(uri(path)).GET().build());
     }
 
     private HttpResponse<String> post(String path, String body) throws Exception {
         return send(
-                HttpRequest.newBuilder(uri(path))
+                TestMemberAuthentication.memberRequest(uri(path))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(body))
                         .build());

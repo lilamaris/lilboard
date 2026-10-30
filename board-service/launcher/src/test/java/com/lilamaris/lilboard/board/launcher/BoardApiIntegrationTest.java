@@ -21,6 +21,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@org.springframework.context.annotation.Import(TestMemberAuthentication.class)
 class BoardApiIntegrationTest {
     @LocalServerPort private int port;
     @Autowired private BoardRepository repository;
@@ -31,7 +32,8 @@ class BoardApiIntegrationTest {
         repository.deleteAll();
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request =
-                    HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/boards"))
+                    TestMemberAuthentication.memberRequest(
+                                    URI.create("http://localhost:" + port + "/api/boards"))
                             .header("Content-Type", "application/json")
                             .POST(
                                     HttpRequest.BodyPublishers.ofString(
@@ -62,7 +64,7 @@ class BoardApiIntegrationTest {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpResponse<String> created =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create("http://localhost:" + port + "/api/boards"))
                                     .header("Content-Type", "application/json")
                                     .POST(
@@ -75,7 +77,7 @@ class BoardApiIntegrationTest {
 
             HttpResponse<String> deleted =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create(
                                                     "http://localhost:"
                                                             + port
@@ -93,7 +95,7 @@ class BoardApiIntegrationTest {
 
             HttpResponse<String> read =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create(
                                                     "http://localhost:"
                                                             + port
@@ -114,7 +116,8 @@ class BoardApiIntegrationTest {
         repository.deleteAll();
         try (HttpClient client = HttpClient.newHttpClient()) {
             client.send(
-                    HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/boards"))
+                    TestMemberAuthentication.memberRequest(
+                                    URI.create("http://localhost:" + port + "/api/boards"))
                             .header("Content-Type", "application/json")
                             .POST(
                                     HttpRequest.BodyPublishers.ofString(
@@ -124,7 +127,7 @@ class BoardApiIntegrationTest {
             UUID id = repository.findAll().get(0).getId();
 
             HttpRequest deleteRequest =
-                    HttpRequest.newBuilder(
+                    TestMemberAuthentication.memberRequest(
                                     URI.create("http://localhost:" + port + "/api/boards/" + id))
                             .method("DELETE", HttpRequest.BodyPublishers.noBody())
                             .build();
@@ -158,7 +161,7 @@ class BoardApiIntegrationTest {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpResponse<String> deleted =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create(
                                                     "http://localhost:"
                                                             + port
@@ -171,7 +174,7 @@ class BoardApiIntegrationTest {
 
             HttpResponse<String> listed =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create(
                                                     "http://localhost:"
                                                             + port
@@ -204,7 +207,7 @@ class BoardApiIntegrationTest {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpResponse<String> updated =
                     client.send(
-                            HttpRequest.newBuilder(
+                            TestMemberAuthentication.memberRequest(
                                             URI.create(
                                                     "http://localhost:"
                                                             + port

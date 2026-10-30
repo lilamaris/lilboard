@@ -19,6 +19,7 @@ DevOps 관련 진행 상태, 상세 설정과 검증 기록, 실행 안내, 정�
 | [저장소 보호](records/repository-protection.md) | Ruleset, 병합 차단, 코드 소유자 승인 |
 | [커버리지](records/coverage.md) | 보고서, 모듈별 게이트, launcher 예외, 실패·제외 검증 |
 | [PostgreSQL과 Flyway](records/postgres-flyway.md) | 프로파일, Flyway 적용, 재기동, 로컬·원격 CI 검증 |
+| [부하 테스트 시딩](records/load-test-seeding.md) | `loadtest` 프로파일, 시딩 엔드포인트·상한·배치, 프로파일 게이트와 검증 한계 |
 | [컨테이너 이미지](records/container-image.md) | Dockerfile·빌드 컨텍스트, 이미지 빌드·기동 검증 |
 | [Compose](records/compose.md) | 환경 변수 예시, API·재기동·데이터 유지 검증 |
 | [관찰성](records/observability.md) | 앱 측 actuator·OTel 연결, OTLP 환경 변수, scrape/traces 수신 검증과 미확인 항목 |
